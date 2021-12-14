@@ -1,7 +1,7 @@
 import sys
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QStatusBar
 from PyQt5.QtCore import Qt
 import widertools
 import wf_utils
@@ -9,31 +9,15 @@ import json
 import os.path as path
 import os
 import numpy as np
-
-def DelTree(treeName, isDelDir=False, isDelRoot=False):
-    'delete a tree, recursively, it can be non empty!'
-    if not path.exists(treeName):
-        if not isDelDir and not isDelRoot:
-            os.mkdir(treeName)
-        return -1
-
-    for root, dirs, files in os.walk(treeName, topdown=False):
-        for name in files:
-            os.remove(path.join(root, name))
-            # print "deleting file %s" % name
-        if isDelDir == True:
-            for name in dirs:
-                os.rmdir(path.join(root, name))
-                # print "deleting folder %s" % name
-    if isDelDir == True and isDelRoot == True:
-        os.rmdir(treeName)
-
+import widerface2voc as w2v
+from wf_utils import DelTree
 
 class MainAppLogic():
-    def __init__(self, ui:widertools.Ui_MainWindow):
+    def __init__(self, ui:widertools.Ui_MainWindow, mainWindow):
         self.ui = ui
+        self.mainWindow = mainWindow
         self.prevImgItem = None
-        ui.cmbMain.addItems(['train','val','test'])
+        ui.cmbMain.addItems(['train','val'])
         ui.cmbMaxFacesPerCluster.addItems(['6','5', '4', '3', '2'])
         ui.cmbCloseRatio.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         ui.cmbCloseRatio.setCurrentIndex(2)
@@ -47,7 +31,15 @@ class MainAppLogic():
         ui.btnValidateSingleFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
         ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateMultiFaceDataset)        
         ui.btnGenMultiFaceDataSet.clicked.connect(self.OnClicked_GenMultiFaceDataset)
+        ui.btnToVoc.clicked.connect(self.OnClicked_ToVOC)
         ui.pgsBar.setVisible(False)
+        ui.tmrToHidePgsBar = QtCore.QTimer(self.mainWindow)
+        ui.tmrToHidePgsBar.setInterval(300)
+        ui.tmrToHidePgsBar.setSingleShot(True)
+        ui.tmrToHidePgsBar.timeout.connect(self.OnTimeout_tmrToHidePgsBar)
+        ui.statusBar = QStatusBar()
+        mainWindow.setStatusBar(ui.statusBar)
+        ui.statusBar.addPermanentWidget(ui.pgsBar)
         #ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
 
         # ui.btnGenMultiFaceDataSet.setEnabled(False)
@@ -55,8 +47,10 @@ class MainAppLogic():
         # ui.cmbMaxFacesPerCluster.setEnabled(False)
         ui.btnSaveOriBBoxes.clicked.connect(self.OnClicked_SaveOriBBoxes)
         self.patchNdx = 0
-        self.lstPatches = []            
-    
+        self.lstPatches = []
+    def OnTimeout_tmrToHidePgsBar(self):
+        self.ui.pgsBar.setVisible(False)
+
     def ShowImage(self, table, ndx, strKey):
         item = self.dataObj.dctFiles[strKey]
         self.prevImgItem = [table, ndx, strKey, item]
@@ -70,11 +64,30 @@ class MainAppLogic():
         # ui.imgWnd.setPixmap(pix2)
         ui.lblImg.setPixmap(pix3)
 
+    def OnClicked_ToVOC(self):
+        def callback(pgs):
+            self.ui.pgsBar.setValue(pgs)
+            QApplication.processEvents()
+        
+        self.ui.pgsBar.setVisible(True)
+        for setSel in ['train', 'val', 'test']:
+            for cntSel in ['single', 'multi']:
+                self.ui.pgsBar.setValue(1)
+                self.ui.statusBar.showMessage('正在转换%s %s' % (setSel, cntSel), 60000)
+                QApplication.processEvents()
+                voc = w2v.WF2VOC(setSel, cntSel)
+                voc.MakeVOC(callback=callback)
+        self.ui.statusBar.showMessage('转换完成', 5000)
+        self.ui.tmrToHidePgsBar.start()
+
     def OnClicked_SaveOriBBoxes(self):
+        self.ui.statusBar.showMessage('正在保存', 60000)
+        QApplication.processEvents()
         sOutFile = 'labels_%s.json' % (self.ui.cmbMain.currentText())
         with open(sOutFile, 'w') as fd:
             json.dump(self.dataObj.dctFiles, fd, indent=4)
-        QMessageBox.information(None,'box', '已保存到%s' % sOutFile)
+        # QMessageBox.information(None,'box', '已保存到%s' % sOutFile)
+        self.ui.statusBar.showMessage('已保存到%s' % sOutFile, 5000)
 
     def OnClicked_Random(self):
         [table,ndx, strKey] = self.dataObj.ShowRandom(False)
@@ -100,16 +113,20 @@ class MainAppLogic():
         outY = int(self.ui.txtOutY.text())        
         self.patchNdx = 0
         self.lstPatches = []
-        self.ui.pgsBar.setValue(0)
+        self.ui.pgsBar.setValue(1)
         self.ui.pgsBar.setVisible(True)        
         dsSize = int(self.ui.txtDatasetSize.text())
         if not path.exists(strOutFolder):
             os.makedirs(strOutFolder)
         maxObjPerCluster = int(self.ui.cmbMaxFacesPerCluster.currentText())
         closeRatio = float(self.ui.cmbCloseRatio.currentText())
+        self.ui.pgsBar.setValue(1)
+        self.ui.pgsBar.setVisible(True)        
+        self.ui.tmrToHidePgsBar.stop()
         for ndx in ndc:
             #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
-            #self.ShowImage(table, ndx, strKey)            
+            #self.ShowImage(table, ndx, strKey)
+            self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
             self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(strOutFolder, \
                 self.patchNdx, ndx=ndx, closeRatio=closeRatio, maxObjPerCluster=maxObjPerCluster, outSize=[outX, outY])
             self.lstPatches += lstPatches
@@ -121,8 +138,10 @@ class MainAppLogic():
             print('%d/%d completed' % (self.patchNdx, dsSize))
         with open('%s/bboxes.json' % strOutFolder, 'w', encoding='utf-8') as fd:
             json.dump(self.lstPatches, fd, indent=4)
-        QMessageBox.information(None,'box', '制作了%d/%d张图片于%s' % (self.patchNdx, dsSize, strOutFolder))
-        self.ui.pgsBar.setVisible(False)
+        self.ui.pgsBar.setValue(100)
+        self.ui.statusBar.showMessage('制作了%d/%d张图片于%s' % (self.patchNdx, dsSize, strOutFolder), 5000)
+        self.ui.tmrToHidePgsBar.start()
+        #self.ui.pgsBar.setVisible(False)
 
     def OnClicked_GenSingleFaceDataset(self):
         cnt = len(self.dataObj.dctFiles.keys())
@@ -137,11 +156,13 @@ class MainAppLogic():
         dsSize = int(self.ui.txtDatasetSize.text())
         if not path.exists(strOutFolder):
             os.makedirs(strOutFolder)
-        self.ui.pgsBar.setValue(0)
+        self.ui.pgsBar.setValue(1)
         self.ui.pgsBar.setVisible(True)
+        self.ui.tmrToHidePgsBar.stop()
         for ndx in ndc:
             #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
             #self.ShowImage(table, ndx, strKey)            
+            self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
             self.patchNdx, lstPatches = self.dataObj.CutPatches(strOutFolder, self.patchNdx, ndx=ndx, outSize=[outX, outY])
             self.lstPatches += lstPatches
             if self.patchNdx >= dsSize:
@@ -150,10 +171,12 @@ class MainAppLogic():
             self.ui.pgsBar.setValue(pgs)
             print('%d/%d completed' % (self.patchNdx, dsSize))
             QApplication.processEvents()
+        self.ui.pgsBar.setValue(100)
         with open('%s/bboxes.json' % (strOutFolder), 'w', encoding='utf-8') as fd:
             json.dump(self.lstPatches, fd, indent=4)
-        QMessageBox.information(None,'box', '制作了%d/%d张图片于%s' % (self.patchNdx, dsSize, strOutFolder))
-        self.ui.pgsBar.setVisible(False)
+        self.ui.statusBar.showMessage('制作了%d/%d张图片于%s' % (self.patchNdx, dsSize, strOutFolder), 5000)
+        self.ui.tmrToHidePgsBar.start()
+        # self.ui.pgsBar.setVisible(False)
 
     def OnClicked_ValidateFaceDataset(self, strSel='single'):
         strOutFolder = './out_%s_%s' % (self.ui.cmbMain.currentText(), strSel)
@@ -186,6 +209,6 @@ if __name__ == '__main__':
     ui.setupUi(MainWindow)
 
     MainWindow.show()
-    mainLogic = MainAppLogic(ui)
+    mainLogic = MainAppLogic(ui, MainWindow)
     app.exec()
     # sys.exit(app.exec_())

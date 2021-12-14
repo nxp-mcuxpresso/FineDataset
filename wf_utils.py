@@ -4,6 +4,24 @@ import cv2
 import os.path as path
 import os
 import json
+def DelTree(treeName, isDelDir=False, isDelRoot=False):
+    'delete a tree, recursively, it can be non empty!'
+    if not path.exists(treeName):
+        if not isDelDir and not isDelRoot:
+            os.mkdir(treeName)
+        return -1
+
+    for root, dirs, files in os.walk(treeName, topdown=False):
+        for name in files:
+            os.remove(path.join(root, name))
+            # print "deleting file %s" % name
+        if isDelDir == True:
+            for name in dirs:
+                os.rmdir(path.join(root, name))
+                # print "deleting folder %s" % name
+    if isDelDir == True and isDelRoot == True:
+        os.rmdir(treeName)
+
 class WFUtils():
     def __init__(self, setSel='train'):
         self.pathBBox = './wider_face_split/wider_face_%s_bbx_gt.txt' % setSel
@@ -12,7 +30,7 @@ class WFUtils():
         fd.close()
         STATE_WANT_FILENAME = 0
         STATE_WANT_BBOX_CNT = 1
-        STATE_WANT_BBOX_ITEM =2
+        STATE_WANT_BBOX_ITEM = 2
         st = STATE_WANT_FILENAME
         bboxRem = 0
         lstBBoxes = []
