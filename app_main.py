@@ -47,6 +47,7 @@ class MainAppLogic():
         ui.btnValidateSingleFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
         ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateMultiFaceDataset)        
         ui.btnGenMultiFaceDataSet.clicked.connect(self.OnClicked_GenMultiFaceDataset)
+        ui.pgsBar.setVisible(False)
         #ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
 
         # ui.btnGenMultiFaceDataSet.setEnabled(False)
@@ -64,7 +65,7 @@ class MainAppLogic():
         pix = QPixmap(QPixmap.fromImage(qImg))
         
         #pix2 = pix.scaled(32,32, Qt.KeepAspectRatio)#, Qt.SmoothTransformation)
-        pix3 = pix.scaled(1024,1024, Qt.KeepAspectRatio)#, Qt.SmoothTransformation)
+        pix3 = pix.scaled(640,640, Qt.KeepAspectRatio)#, Qt.SmoothTransformation)
         
         # ui.imgWnd.setPixmap(pix2)
         ui.lblImg.setPixmap(pix3)
@@ -99,6 +100,8 @@ class MainAppLogic():
         outY = int(self.ui.txtOutY.text())        
         self.patchNdx = 0
         self.lstPatches = []
+        self.ui.pgsBar.setValue(0)
+        self.ui.pgsBar.setVisible(True)        
         dsSize = int(self.ui.txtDatasetSize.text())
         if not path.exists(strOutFolder):
             os.makedirs(strOutFolder)
@@ -112,10 +115,14 @@ class MainAppLogic():
             self.lstPatches += lstPatches
             if self.patchNdx >= dsSize:
                 break
+            pgs = 100 * self.patchNdx / dsSize
+            self.ui.pgsBar.setValue(pgs)
+            QApplication.processEvents()
             print('%d/%d completed' % (self.patchNdx, dsSize))
         with open('%s/bboxes.json' % strOutFolder, 'w', encoding='utf-8') as fd:
             json.dump(self.lstPatches, fd, indent=4)
-        QMessageBox.information(None,'box', '制作完成')
+        QMessageBox.information(None,'box', '制作了%d/%d张图片于%s' % (self.patchNdx, dsSize, strOutFolder))
+        self.ui.pgsBar.setVisible(False)
 
     def OnClicked_GenSingleFaceDataset(self):
         cnt = len(self.dataObj.dctFiles.keys())
@@ -130,6 +137,8 @@ class MainAppLogic():
         dsSize = int(self.ui.txtDatasetSize.text())
         if not path.exists(strOutFolder):
             os.makedirs(strOutFolder)
+        self.ui.pgsBar.setValue(0)
+        self.ui.pgsBar.setVisible(True)
         for ndx in ndc:
             #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
             #self.ShowImage(table, ndx, strKey)            
@@ -137,11 +146,14 @@ class MainAppLogic():
             self.lstPatches += lstPatches
             if self.patchNdx >= dsSize:
                 break
+            pgs = 100 * self.patchNdx / dsSize
+            self.ui.pgsBar.setValue(pgs)
             print('%d/%d completed' % (self.patchNdx, dsSize))
+            QApplication.processEvents()
         with open('%s/bboxes.json' % (strOutFolder), 'w', encoding='utf-8') as fd:
             json.dump(self.lstPatches, fd, indent=4)
-        QMessageBox.information(None,'box', '制作完成')
-
+        QMessageBox.information(None,'box', '制作了%d/%d张图片于%s' % (self.patchNdx, dsSize, strOutFolder))
+        self.ui.pgsBar.setVisible(False)
 
     def OnClicked_ValidateFaceDataset(self, strSel='single'):
         strOutFolder = './out_%s_%s' % (self.ui.cmbMain.currentText(), strSel)

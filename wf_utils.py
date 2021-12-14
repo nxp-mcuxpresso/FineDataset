@@ -320,8 +320,7 @@ class WFUtils():
         lstPatches = []
         if len(item['bboxes']) < 1:
             return patchNdx, []
-        stMainFile = os.path.splitext(os.path.split(strFile)[1])[0]
-
+        sMainName = os.path.splitext(os.path.split(strFile)[1])[0]
         image = Image.open(strFile)
         
         wVsH = outSize[0] / outSize[1]
@@ -375,7 +374,7 @@ class WFUtils():
                         continue
                     img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
                     
-                    sOutFileName = '%s/patch_%05d_%d.png' % (strOutFolder, patchNdx, int(scaler * 100))
+                    sOutFileName = '%s/%s_%05d_%d.png' % (strOutFolder, sMainName, patchNdx, int(scaler * 100))
                  
                     img = cv2.resize(img,(outSize[0], outSize[1]), interpolation=cv2.INTER_LINEAR)
                     resizeRatio = outSize[0] / w2
