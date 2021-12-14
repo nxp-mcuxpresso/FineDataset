@@ -15,7 +15,7 @@
 
 #### 使用说明
 
-1.  xxxx
+1.  需要在本代码树目录下解压缩widerface数据集的 wider_face_split.zip，以及 WIDER_{train|val|test}.zip中的至少一个
 2.  xxxx
 3.  xxxx
 
