@@ -64,8 +64,8 @@ class WF2VOC():
             sOutJpgPath = '%s/JPEGImages/%s.jpg' % (self.strOutPath, path.splitext(sFileName)[0])
             cv2.imwrite(sOutJpgPath, img, [int(cv2.IMWRITE_JPEG_QUALITY),70])
             strOutFrame = strPatten % (self.setSel, self.cntSel, sFileName, img.shape[0], img.shape[1])
-            for bbox in item['bboxes']:
-                strVocBox = strObj % (bbox[0], bbox[1], bbox[2], bbox[3])
+            for xyxy in item['xyxys']:
+                strVocBox = strObj % (xyxy[0], xyxy[1], xyxy[2], xyxy[3])
                 strOutFrame += strVocBox
             strOutFrame += '</annotation>\n'
             

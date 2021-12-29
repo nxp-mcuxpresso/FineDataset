@@ -71,7 +71,7 @@ class WFUtils():
                             self.dctFiles[strFileName] = {
                                 'cnt0' : nBBoxCnt,
                                 'cnt' : len(lstBBoxes),
-                                'bboxes' : lstBBoxes
+                                'xywhs' : lstBBoxes
                             }
                 else:
                     st = STATE_WANT_FILENAME
@@ -89,8 +89,8 @@ class WFUtils():
         '''
         strFile = list(self.dctFiles.keys())[ndx]
         item = self.dctFiles[strFile]
-        bboxCnt = len(item['bboxes'])
-        if len(item['bboxes']) < 4:
+        bboxCnt = len(item['xywhs'])
+        if len(item['xywhs']) < 4:
             return [[],[],[]],None
         
         def _getValues(b1):
@@ -107,10 +107,10 @@ class WFUtils():
         # 先获取靠近的一对
         lstPairs = []
         for i in range(bboxCnt):
-            b1 = item['bboxes'][i]
+            b1 = item['xywhs'][i]
             wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(b1)
             for j in range(i + 1, bboxCnt):
-                b2 = item['bboxes'][j]
+                b2 = item['xywhs'][j]
                 wj, hj, x1j, y1j, x2j, y2j, cxj, cyj, sqrtAj = _getValues(b2)
                 x1o = x1i if x1i < x1j else x1j
                 y1o = y1i if y1i < y1j else y1j
@@ -135,7 +135,7 @@ class WFUtils():
             b1 = pair[3]
             wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(b1)
             for j in range(bboxCnt):
-                b2 = item['bboxes'][j]
+                b2 = item['xywhs'][j]
                 if b2 == pair[0][0] or b2 == pair[0][1]:
                     continue
                 wj, hj, x1j, y1j, x2j, y2j, cxj, cyj, sqrtAj = _getValues(b2)
@@ -243,7 +243,9 @@ class WFUtils():
                 cv2.imshow("OpenCV",img)
                 cv2.waitKey()                   
                 break
-
+    '''
+    CutPatches: 切割出包含一簇人脸的图片
+    '''
     def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[0.95, 0.7], outSize = [96, 128], \
             ndx=-1, strFile='', maxObjPerCluster=5, closeRatio=0.333, lstClusters=[]):
         if ndx >= 0:
@@ -309,7 +311,7 @@ class WFUtils():
 
                 sOutFileName = '%s/%s_%05d_%d.png' % (strOutFolder, sMainName, patchNdx, int(scaler * 100))
                 dct = {'filename' : sOutFileName}
-                lstBBoxes = []
+                lstBBxyxys = []
                 for subBox in pat[0]:
                     ptx1 = subBox['x1'] - x12
                     pty1 = subBox['y1'] - y12
@@ -324,25 +326,28 @@ class WFUtils():
                     [pty1, pty2] = [int(x * outSize[1] / h2 + 0.5) for x in [pty1, pty2]]
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
                     cv2.imwrite(sOutFileName, img)
-                    lstBBoxes.append([ptx1, pty1, ptx2, pty2])
-                dct['bboxes'] = lstBBoxes
+                    lstBBxyxys.append([ptx1, pty1, ptx2, pty2])
+                dct['xyxys'] = lstBBxyxys
                 patchNdx += 1
                 lstPatches.append(dct)
                 break
         return patchNdx, lstPatches        
 
+    '''
+    CutPatches: 切割出只包含一个人脸GT框的图片
+    '''
     def CutPatches(self, strOutFolder, patchNdx, scalers=[0.8, 0.6, 0.45], outSize = [96,128], ndx=-1, strFile=''):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
         item = self.dctFiles[strFile]
         lstPatches = []
-        if len(item['bboxes']) < 1:
+        if len(item['xywhs']) < 1:
             return patchNdx, []
         sMainName = os.path.splitext(os.path.split(strFile)[1])[0]
         image = Image.open(strFile)
         
         wVsH = outSize[0] / outSize[1]
-        for bbox in item['bboxes']:
+        for bbox in item['xywhs']:
             w  = bbox['w']
             h = bbox['h']
             x1 = bbox['x1']
@@ -402,7 +407,7 @@ class WFUtils():
                     cv2.imwrite(sOutFileName, img)
                     dct = {
                         'filename' : sOutFileName,
-                        'bboxes' : [[ptx1, pty1, ptx2, pty2]]
+                        'xyxys' : [[ptx1, pty1, ptx2, pty2]]
                     }
                     lstPatches.append(dct)
                     patchNdx += 1
@@ -414,7 +419,7 @@ class WFUtils():
         item = self.dctFiles[strFile]
         image = Image.open(strFile)
         img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
-        for bbox in item['bboxes']:
+        for bbox in item['xywhs']:
             pt1 = (bbox['x1'], bbox['y1'])
             pt2 = (bbox['x1'] + bbox['w'] , bbox['y1'] + bbox['h'])
             col = (bbox['occlusion'] * 127,191,bbox['isOverIllumination'] * 255)
@@ -441,7 +446,7 @@ class WFUtils():
         strFile = item['filename']
         image = Image.open(strFile)
         img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
-        for bbox in item['bboxes']:
+        for bbox in item['xyxys']:
             pt1 = (bbox[0], bbox[1])
             pt2 = (bbox[2], bbox[3])
             col = (0,255,0)
