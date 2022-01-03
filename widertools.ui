@@ -47,157 +47,13 @@
      <string>TextLabel</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnRandom">
-    <property name="geometry">
-     <rect>
-      <x>1280</x>
-      <y>380</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>Random</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_3">
-    <property name="geometry">
-     <rect>
-      <x>1020</x>
-      <y>90</y>
-      <width>61</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>输出宽:</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="txtOutX">
-    <property name="geometry">
-     <rect>
-      <x>1100</x>
-      <y>90</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>96</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_4">
-    <property name="geometry">
-     <rect>
-      <x>1020</x>
-      <y>120</y>
-      <width>61</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>输出高</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="txtOutY">
-    <property name="geometry">
-     <rect>
-      <x>1100</x>
-      <y>120</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>128</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_5">
-    <property name="geometry">
-     <rect>
-      <x>1020</x>
-      <y>150</y>
-      <width>71</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>数据集大小</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="txtDatasetSize">
-    <property name="geometry">
-     <rect>
-      <x>1100</x>
-      <y>150</y>
-      <width>51</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>300</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="btnSaveOriBBoxes">
-    <property name="geometry">
-     <rect>
-      <x>1240</x>
-      <y>340</y>
-      <width>91</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>保存原始标签</string>
-    </property>
-   </widget>
    <widget class="QGroupBox" name="groupBox">
     <property name="geometry">
      <rect>
-      <x>1170</x>
-      <y>90</y>
-      <width>171</width>
-      <height>131</height>
+      <x>1010</x>
+      <y>160</y>
+      <width>331</width>
+      <height>291</height>
      </rect>
     </property>
     <property name="font">
@@ -206,12 +62,12 @@
      </font>
     </property>
     <property name="title">
-     <string>多框数据集配置</string>
+     <string>多框子块数据集配置</string>
     </property>
     <widget class="QLabel" name="label_2">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>20</x>
        <y>80</y>
        <width>121</width>
        <height>16</height>
@@ -229,7 +85,7 @@
     <widget class="QComboBox" name="cmbCloseRatio">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>20</x>
        <y>50</y>
        <width>81</width>
        <height>21</height>
@@ -244,8 +100,8 @@
     <widget class="QLabel" name="label_6">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>20</y>
+       <x>20</x>
+       <y>30</y>
        <width>141</width>
        <height>16</height>
       </rect>
@@ -262,7 +118,7 @@
     <widget class="QComboBox" name="cmbMaxFacesPerCluster">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>20</x>
        <y>100</y>
        <width>81</width>
        <height>21</height>
@@ -272,6 +128,287 @@
       <font>
        <pointsize>9</pointsize>
       </font>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnTagSelInv">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>190</y>
+       <width>61</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>反选</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_7">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>140</y>
+       <width>91</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>边框最小高/宽</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_9">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>10</y>
+       <width>81</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>类别筛选</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnTagSelAll">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>190</y>
+       <width>61</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>全选</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="txtMaxHvsW">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>170</y>
+       <width>41</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>6/1</string>
+     </property>
+    </widget>
+    <widget class="QScrollArea" name="scrollTags">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>30</y>
+       <width>131</width>
+       <height>151</height>
+      </rect>
+     </property>
+     <property name="verticalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOn</enum>
+     </property>
+     <property name="sizeAdjustPolicy">
+      <enum>QAbstractScrollArea::AdjustIgnored</enum>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>116</width>
+        <height>149</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QLineEdit" name="txtMinHvsW">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>140</y>
+       <width>41</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>1.0</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_8">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>170</y>
+       <width>91</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>边框最大高/宽</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_5">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>260</y>
+       <width>81</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>生成子块数</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="txtDatasetSize">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>260</y>
+       <width>51</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>300</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_4">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>200</y>
+       <width>61</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>子块高度</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="txtOutX">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>230</y>
+       <width>51</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>96</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>230</y>
+       <width>61</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>子块宽度</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="txtOutY">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>200</y>
+       <width>51</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>128</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnToVoc">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>230</y>
+       <width>131</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>全部转换成VOC格式</string>
      </property>
     </widget>
    </widget>
@@ -293,31 +430,13 @@
      <number>24</number>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnToVoc">
-    <property name="geometry">
-     <rect>
-      <x>1030</x>
-      <y>730</y>
-      <width>131</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>全部转换成VOC格式</string>
-    </property>
-   </widget>
    <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
       <x>1010</x>
       <y>20</y>
       <width>341</width>
-      <height>61</height>
+      <height>101</height>
      </rect>
     </property>
     <property name="font">
@@ -326,13 +445,13 @@
      </font>
     </property>
     <property name="title">
-     <string>数据集选择</string>
+     <string>源数据集选择</string>
     </property>
     <widget class="QLabel" name="label">
      <property name="geometry">
       <rect>
-       <x>220</x>
-       <y>20</y>
+       <x>10</x>
+       <y>60</y>
        <width>31</width>
        <height>16</height>
       </rect>
@@ -349,9 +468,9 @@
     <widget class="QComboBox" name="cmbSubSet">
      <property name="geometry">
       <rect>
-       <x>260</x>
-       <y>20</y>
-       <width>71</width>
+       <x>40</x>
+       <y>60</y>
+       <width>91</width>
        <height>21</height>
       </rect>
      </property>
@@ -364,7 +483,7 @@
     <widget class="QPushButton" name="btnDSFolder">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>140</x>
        <y>20</y>
        <width>61</width>
        <height>31</height>
@@ -376,13 +495,13 @@
       </font>
      </property>
      <property name="text">
-      <string>目录</string>
+      <string>目录...</string>
      </property>
     </widget>
     <widget class="QComboBox" name="cmbDSType">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>40</x>
        <y>20</y>
        <width>91</width>
        <height>21</height>
@@ -392,7 +511,7 @@
     <widget class="QLabel" name="label_13">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>10</x>
        <y>20</y>
        <width>37</width>
        <height>24</height>
@@ -408,12 +527,82 @@
       <string>类型</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="btnForceLoadDS">
+     <property name="geometry">
+      <rect>
+       <x>210</x>
+       <y>20</y>
+       <width>61</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>装载</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="chkAutoload">
+     <property name="geometry">
+      <rect>
+       <x>280</x>
+       <y>20</y>
+       <width>51</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>自动</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnRandom">
+     <property name="geometry">
+      <rect>
+       <x>140</x>
+       <y>60</y>
+       <width>75</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>随机显示</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnSaveOriBBoxes">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>60</y>
+       <width>91</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>保存原始标签</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QGroupBox" name="groupBox_3">
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>260</y>
+      <y>490</y>
       <width>141</width>
       <height>61</height>
      </rect>
@@ -466,8 +655,8 @@
    <widget class="QGroupBox" name="groupBox_4">
     <property name="geometry">
      <rect>
-      <x>1160</x>
-      <y>260</y>
+      <x>1150</x>
+      <y>490</y>
       <width>201</width>
       <height>61</height>
      </rect>
@@ -534,213 +723,6 @@
       <string>原图</string>
      </property>
     </widget>
-   </widget>
-   <widget class="QGroupBox" name="groupBox_5">
-    <property name="geometry">
-     <rect>
-      <x>1030</x>
-      <y>420</y>
-      <width>151</width>
-      <height>281</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="title">
-     <string>筛选</string>
-    </property>
-    <widget class="QLabel" name="label_7">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>9</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>最小高/宽</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_8">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>50</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>9</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>最大高/宽</string>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="txtMinHvsW">
-     <property name="geometry">
-      <rect>
-       <x>90</x>
-       <y>20</y>
-       <width>51</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>9</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>1.0</string>
-     </property>
-    </widget>
-    <widget class="QScrollArea" name="scrollTags">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>100</y>
-       <width>131</width>
-       <height>131</height>
-      </rect>
-     </property>
-     <property name="verticalScrollBarPolicy">
-      <enum>Qt::ScrollBarAlwaysOn</enum>
-     </property>
-     <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustIgnored</enum>
-     </property>
-     <property name="widgetResizable">
-      <bool>true</bool>
-     </property>
-     <widget class="QWidget" name="scrollAreaWidgetContents">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>116</width>
-        <height>129</height>
-       </rect>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QLabel" name="label_9">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>80</y>
-       <width>81</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>9</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>使用的类别</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btnTagSelInv">
-     <property name="geometry">
-      <rect>
-       <x>80</x>
-       <y>240</y>
-       <width>61</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>9</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>反选</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btnTagSelAll">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>240</y>
-       <width>61</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>9</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>全选</string>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="txtMaxHvsW">
-     <property name="geometry">
-      <rect>
-       <x>90</x>
-       <y>50</y>
-       <width>51</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>9</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>6/1</string>
-     </property>
-    </widget>
-   </widget>
-   <widget class="QPushButton" name="btnForceLoadDS">
-    <property name="geometry">
-     <rect>
-      <x>1020</x>
-      <y>180</y>
-      <width>101</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>刷新源数据集</string>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="chkAutoload">
-    <property name="geometry">
-     <rect>
-      <x>1020</x>
-      <y>220</y>
-      <width>71</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>自动刷新</string>
-    </property>
-    <property name="checked">
-     <bool>true</bool>
-    </property>
    </widget>
   </widget>
   <action name="actiontrain">

@@ -248,8 +248,11 @@ class MainAppLogic():
     
     def OnClicked_OriImage(self):
         if len(self.oriImage) > 0:
-            [table, strKey] = self.dataObj.ShowImageFile(self.oriImage, False, allowedTags=self.GetAllowedTags())
-            self.ShowImage(table, strKey)        
+            try:
+                [table, strKey] = self.dataObj.ShowImageFile(self.oriImage, False, allowedTags=self.GetAllowedTags())
+                self.ShowImage(table, strKey)        
+            except:
+                self.ui.statusBar.showMessage('未找到图片 %s' % (strKey)) 
 
     def OnClicked_TagSelAll(self):
         for item in self.chkTags:

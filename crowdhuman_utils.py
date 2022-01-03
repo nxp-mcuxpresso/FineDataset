@@ -57,8 +57,9 @@ class CrowdHumanUtils():
             random.shuffle(self.lstAnnos)
         if maxCnt != 0 and len(self.lstAnnos) > maxCnt:
             self.lstAnnos = self.lstAnnos[:maxCnt]
+        imgCnt = min(maxCnt, len(self.lstAnnos))
 
-        for i in range(maxCnt):
+        for i in range(imgCnt):
             dctIn = self.lstAnnos[i]
             lstBBoxes = []
             dctAreas = []
