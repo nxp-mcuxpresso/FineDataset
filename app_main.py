@@ -1,36 +1,41 @@
 import sys
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QStatusBar
+from PyQt5.QtWidgets import QCheckBox, QWidget, QApplication, QMainWindow, QMessageBox, QStatusBar, QFileDialog
 from PyQt5.QtCore import Qt
 import widertools
-import wf_utils
 import json
 import os.path as path
 import os
 import numpy as np
 import widerface2voc as w2v
-from wf_utils import DelTree
-
+import time
+import shutil
+import wf_utils
+import crowdhuman_utils as ch_utils
+from patcher import DelTree
+import patcher
 class MainAppLogic():
     def __init__(self, ui:widertools.Ui_MainWindow, mainWindow):
         self.ui = ui
         self.mainWindow = mainWindow
         self.prevImgItem = None
-        ui.cmbMain.addItems(['train','val'])
+        ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
+        ui.cmbDSType.setCurrentIndex(1)
+        ui.cmbSubSet.addItems(['train','val'])
         ui.cmbMaxFacesPerCluster.addItems(['6','5', '4', '3', '2'])
         ui.cmbCloseRatio.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         ui.cmbCloseRatio.setCurrentIndex(2)
-        #ui.cmbMain.currentIndexChanged.connect(lambda: LoadDataset(ui))
-        ui.cmbMain.textActivated.connect(lambda: self.LoadDataset())
-        #ui.cmbMain.highlighted.connect(lambda: LoadDataset(ui)) 
-        self.LoadDataset()
+        #ui.cmbSubSet.currentIndexChanged.connect(lambda: LoadDataset(ui))
+        ui.cmbSubSet.textActivated.connect(lambda: self.LoadDataset())
+        #ui.cmbSubSet.highlighted.connect(lambda: LoadDataset(ui)) 
         ui.btnRandom.clicked.connect(self.OnClicked_Random)
         ui.btnSplitSingle.clicked.connect(self.OnClicked_SplitSingle)
         ui.btnGenSingleFaceDataSet.clicked.connect(self.OnClicked_GenSingleFaceDataset)
         ui.btnValidateSingleFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
         ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateMultiFaceDataset)        
         ui.btnGenMultiFaceDataSet.clicked.connect(self.OnClicked_GenMultiFaceDataset)
+        ui.btnDSFolder.clicked.connect(self.OnClicked_DSFolder)
         ui.btnToVoc.clicked.connect(self.OnClicked_ToVOC)
         ui.pgsBar.setVisible(False)
         ui.tmrToHidePgsBar = QtCore.QTimer(self.mainWindow)
@@ -48,6 +53,10 @@ class MainAppLogic():
         ui.btnSaveOriBBoxes.clicked.connect(self.OnClicked_SaveOriBBoxes)
         self.patchNdx = 0
         self.lstPatches = []
+        self.strOutFolder = ''
+        self.chkTags = []
+        self.LoadDataset('../dataset_crowd/')
+
     def OnTimeout_tmrToHidePgsBar(self):
         self.ui.pgsBar.setVisible(False)
 
@@ -59,7 +68,9 @@ class MainAppLogic():
         pix = QPixmap(QPixmap.fromImage(qImg))
         
         #pix2 = pix.scaled(32,32, Qt.KeepAspectRatio)#, Qt.SmoothTransformation)
-        pix3 = pix.scaled(640,640, Qt.KeepAspectRatio)#, Qt.SmoothTransformation)
+        rect = ui.lblImg.rect()
+        pix3 = pix.scaled(rect.width(),rect.height(), Qt.KeepAspectRatio)     #, Qt.SmoothTransformation)   
+
         
         # ui.imgWnd.setPixmap(pix2)
         ui.lblImg.setPixmap(pix3)
@@ -83,14 +94,14 @@ class MainAppLogic():
     def OnClicked_SaveOriBBoxes(self):
         self.ui.statusBar.showMessage('正在保存', 60000)
         QApplication.processEvents()
-        sOutFile = 'labels_%s.json' % (self.ui.cmbMain.currentText())
+        sOutFile = 'labels_%s.json' % (self.ui.cmbSubSet.currentText())
         with open(sOutFile, 'w') as fd:
             json.dump(self.dataObj.dctFiles, fd, indent=4)
         # QMessageBox.information(None,'box', '已保存到%s' % sOutFile)
         self.ui.statusBar.showMessage('已保存到%s' % sOutFile, 5000)
 
     def OnClicked_Random(self):
-        [table,ndx, strKey] = self.dataObj.ShowRandom(False)
+        [table,ndx, strKey] = self.dataObj.ShowRandom(False, allowedTags=self.GetAllowedTags())
         self.ShowImage(table, ndx, strKey)
 
     def OnClicked_SplitSingle(self):
@@ -103,12 +114,42 @@ class MainAppLogic():
         with open('bboxes.json', 'w', encoding='utf-8') as fd:
             json.dump(self.lstPatches, fd, indent=4)
 
+    def OnClicked_DSFolder(self):
+        dir_choose = QFileDialog.getExistingDirectory(MainWindow,  
+                                    "选取文件夹",  
+                                    './') # 起始路径
+
+        if dir_choose == "":
+            print("\n取消选择")
+            return
+
+        print("\n你选择的文件夹为:")
+        print(dir_choose)
+        self.LoadDataset(dir_choose)
+
+    def GetNextFreeFolder(self, strPrimary, isReplace=True):
+        sTry = strPrimary
+        if isReplace == True:
+            if path.exists(sTry):
+                shutil.rmtree(sTry)
+        else:
+            ndx = 1
+            while path.exists(sTry):
+                now = int(time.time())
+                #转换为其他日期格式,如:"%Y-%m-%d %H:%M:%S"
+                timeArray = time.localtime(now)
+                otherStyleTime = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)            
+                sTry = '%s_%s' % (strPrimary, otherStyleTime)
+                ndx += 1
+        return sTry
+
     def OnClicked_GenMultiFaceDataset(self):
         cnt = len(self.dataObj.dctFiles.keys())
         ndc = np.arange(cnt)
         np.random.shuffle(ndc)
-        strOutFolder = './out_%s_multi' % (self.ui.cmbMain.currentText())
-        DelTree(strOutFolder, True)
+        strOutFolder = './out_%s_multi' % (self.ui.cmbSubSet.currentText())
+        strOutFolder = self.GetNextFreeFolder(strOutFolder)
+        self.strOutFolder = strOutFolder
         outX = int(self.ui.txtOutX.text())
         outY = int(self.ui.txtOutY.text())        
         self.patchNdx = 0
@@ -121,14 +162,15 @@ class MainAppLogic():
         maxObjPerCluster = int(self.ui.cmbMaxFacesPerCluster.currentText())
         closeRatio = float(self.ui.cmbCloseRatio.currentText())
         self.ui.pgsBar.setValue(1)
-        self.ui.pgsBar.setVisible(True)        
+        self.ui.pgsBar.setVisible(True)
+        lstAllowed = self.GetAllowedTags()        
         self.ui.tmrToHidePgsBar.stop()
         for ndx in ndc:
             #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
             #self.ShowImage(table, ndx, strKey)
             self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
-            self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(strOutFolder, \
-                self.patchNdx, ndx=ndx, closeRatio=closeRatio, maxObjPerCluster=maxObjPerCluster, outSize=[outX, outY])
+            self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(strOutFolder, self.patchNdx, ndx=ndx, 
+                closeRatio=closeRatio, maxObjPerCluster=maxObjPerCluster, outSize=[outX, outY], allowedTags=lstAllowed)
             self.lstPatches += lstPatches
             if self.patchNdx >= dsSize:
                 break
@@ -147,8 +189,9 @@ class MainAppLogic():
         cnt = len(self.dataObj.dctFiles.keys())
         ndc = np.arange(cnt)
         np.random.shuffle(ndc)
-        strOutFolder = './out_%s_single' % (self.ui.cmbMain.currentText())
-        DelTree(strOutFolder, True)
+        strOutFolder = './out_%s_single' % (self.ui.cmbSubSet.currentText())
+        strOutFolder = self.GetNextFreeFolder(strOutFolder)
+        self.strOutFolder = strOutFolder
         outX = int(self.ui.txtOutX.text())
         outY = int(self.ui.txtOutY.text())        
         self.patchNdx = 0
@@ -159,11 +202,13 @@ class MainAppLogic():
         self.ui.pgsBar.setValue(1)
         self.ui.pgsBar.setVisible(True)
         self.ui.tmrToHidePgsBar.stop()
+        lstAllowed = self.GetAllowedTags()
         for ndx in ndc:
             #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
             #self.ShowImage(table, ndx, strKey)            
             self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
-            self.patchNdx, lstPatches = self.dataObj.CutPatches(strOutFolder, self.patchNdx, ndx=ndx, outSize=[outX, outY])
+            self.patchNdx, lstPatches = self.dataObj.CutPatches(
+                strOutFolder, self.patchNdx, ndx=ndx, outSize=[outX, outY], allowedTags=lstAllowed)
             self.lstPatches += lstPatches
             if self.patchNdx >= dsSize:
                 break
@@ -179,15 +224,14 @@ class MainAppLogic():
         # self.ui.pgsBar.setVisible(False)
 
     def OnClicked_ValidateFaceDataset(self, strSel='single'):
-        strOutFolder = './out_%s_%s' % (self.ui.cmbMain.currentText(), strSel)
+        strOutFolder = './out_%s_%s' % (self.ui.cmbSubSet.currentText(), strSel)
         table = self.dataObj.ShowRandomValidate(strOutFolder)
         c = table.shape
         qImg = QtGui.QImage(bytearray(table), c[1], c[0], c[1]*3, QtGui.QImage.Format_BGR888)
         pix = QPixmap(QPixmap.fromImage(qImg))
-        
-        #pix2 = pix.scaled(32,32, Qt.KeepAspectRatio)#, Qt.SmoothTransformation)
-        pix3 = pix.scaled(128,128, Qt.KeepAspectRatio)#, Qt.SmoothTransformation)
-        
+
+        rect = self.ui.lblImg.rect()
+        pix3 = pix.scaled(rect.width(),rect.height(), Qt.KeepAspectRatio)
         # ui.imgWnd.setPixmap(pix2)
         self.ui.lblImg.setPixmap(pix3)             
 
@@ -197,17 +241,60 @@ class MainAppLogic():
     def OnClicked_ValidateMultiFaceDataset(self, strSel='single'):
         self.OnClicked_ValidateFaceDataset('multi')        
               
-    def LoadDataset(self):
-        # QMessageBox.information(None,'box',ui.cmbMain.currentText())
-        # ui.cmbMain.currentData
-        self.dataObj = wf_utils.WFUtils(self.ui.cmbMain.currentText())
+    def GetAllowedTags(self):
+        lstTags = []
+        for chk in self.chkTags:
+            if chk.isChecked():
+                lstTags.append(chk.text())
+        return lstTags
+    def LoadDataset(self, dsFolder):
+        # QMessageBox.information(None,'box',ui.cmbSubSet.currentText())
+        # ui.cmbSubSet.currentData
+        provider = None
+        dsType = ui.cmbDSType.currentText()
+        self.ui.statusBar.showMessage('数据集读取中...')
+        QApplication.processEvents()
+        try:
+            setSel = self.ui.cmbSubSet.currentText()
+            if dsType == 'wider_face':
+                provider = wf_utils.WFUtils(dsFolder, setSel)
+            elif dsType == 'crowd_human':
+                provider = ch_utils.CrowdHumanUtils(dsFolder, setSel)
+        except Exception as e:
+            print(e)
+            self.ui.statusBar.showMessage('代码错误：\n' + str(e))
+
+        if provider is None or provider.dctFiles is None or provider.dctFiles == {}:
+            self.ui.statusBar.showMessage('%s中的数据集无法按%s解析！' % (dsFolder, dsType) )            
+        else:
+            self.dsFolder = dsFolder
+            self.provider = provider
+            _translate = QtCore.QCoreApplication.translate
+            MainWindow.setWindowTitle(_translate("MainWindow", "数据集化简分割工具 - 源数据集路径：%s" % (self.dsFolder)))            
+            self.dataObj = patcher.Patcher(provider)
+            self.ui.statusBar.showMessage('数据集读取成功!')
+            for chk in self.chkTags:
+                chk.hide()
+                chk.deleteLater()
+            self.chkTags = []
+            topFiller = QWidget()
+            topFiller.setMinimumSize(100, 500)
+            for (i, tag) in enumerate(list(self.provider.GetTagSet())):
+                chk = QCheckBox(topFiller)
+                chk.setText(tag)
+                chk.setChecked(True)
+                chk.isChecked()
+                chk.move(4, 5 + i * 20)
+                self.chkTags.append(chk, chk.text())
+                
+            mainUI.scrollTags.setWidget(topFiller)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
     ui = widertools.Ui_MainWindow()
     ui.setupUi(MainWindow)
-
+    mainUI = ui
     MainWindow.show()
     mainLogic = MainAppLogic(ui, MainWindow)
     app.exec()

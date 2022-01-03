@@ -38,7 +38,8 @@ strObj = '''
 '''
 import os.path as path
 import os
-from wf_utils import DelTree
+# from wf_utils import DelTree
+from shutil import rmtree
 import cv2
 class WF2VOC():
     def __init__(self, setSel='train', cntSel='single', strRootPath = './wf_voc'):
@@ -53,7 +54,7 @@ class WF2VOC():
         else:
             return -1
         if path.exists(self.strOutPath):
-            DelTree(self.strOutPath, True)
+            rmtree(self.strOutPath)
         os.makedirs(path.join(self.strOutPath, "JPEGImages"))
         os.makedirs(path.join(self.strOutPath, "Annotations"))
         cnt = 0
