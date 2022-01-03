@@ -20,6 +20,8 @@ class MainAppLogic():
         self.ui = ui
         self.mainWindow = mainWindow
         self.oriImage = ''
+        self.dsFolder = ''
+        self.nextDSFolder = ''
         ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
         ui.cmbDSType.setCurrentIndex(0)
         ui.cmbSubSet.addItems(['train','val'])
@@ -27,7 +29,8 @@ class MainAppLogic():
         ui.cmbCloseRatio.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         ui.cmbCloseRatio.setCurrentIndex(2)
         #ui.cmbSubSet.currentIndexChanged.connect(lambda: LoadDataset(ui))
-        ui.cmbSubSet.textActivated.connect(lambda: self.LoadDataset())
+        ui.btnForceLoadDS.clicked.connect(lambda: self.LoadDataset(self.nextDSFolder))
+        ui.cmbSubSet.textActivated.connect(lambda: self.LoadDataset(self.nextDSFolder))
         #ui.cmbSubSet.highlighted.connect(lambda: LoadDataset(ui)) 
         ui.btnRandom.clicked.connect(self.OnClicked_Random)
         ui.btnGenSingleFaceDataSet.clicked.connect(self.OnClicked_GenSingleFaceDataset)
@@ -57,7 +60,8 @@ class MainAppLogic():
         self.lstPatches = []
         self.strOutFolder = ''
         self.chkTags = []
-        self.LoadDataset('q:/datasets/wider_face')
+        if ui.chkAutoload.isChecked():
+            self.LoadDataset('q:/datasets/wider_face')
 
     def OnTimeout_tmrToHidePgsBar(self):
         self.ui.pgsBar.setVisible(False)
@@ -116,7 +120,9 @@ class MainAppLogic():
 
         print("\n你选择的文件夹为:")
         print(dir_choose)
-        self.LoadDataset(dir_choose)
+        self.nextDSFolder = dir_choose
+        if self.ui.chkAutoload.isChecked():
+            self.LoadDataset(dir_choose)
 
     def GetNextFreeFolder(self, strPrimary, isReplace=True):
         sTry = strPrimary
@@ -265,6 +271,32 @@ class MainAppLogic():
     def LoadDataset(self, dsFolder):
         # QMessageBox.information(None,'box',ui.cmbSubSet.currentText())
         # ui.cmbSubSet.currentData
+
+        lstHvsW_config = [1.0, 5.0] # min, max
+        lstNew = []
+        for (i, txt) in enumerate([mainUI.txtMinHvsW.text(), mainUI.txtMaxHvsW.text()]):
+            divSym = ''
+            if ':' in txt:
+                divSym = ':'
+            elif '/' in txt:
+                divSym = '/'
+            
+            try:
+                if divSym != '':
+                    lstVals = [float(x.strip()) for x in txt.split(divSym)]
+                    valOut = lstVals[0] / lstVals[1]
+                else:
+                    valOut = float(txt.strip())
+                lstNew.append(valOut)
+            except:
+                pass
+        if len(lstNew) == 2 and lstNew[0] < lstNew[1]:
+            lstHvsW_config = lstNew
+        dctCfg = {
+            'minHvsW' : lstHvsW_config[0],
+            'maxHvsW' : lstHvsW_config[1]
+        }
+
         provider = None
         dsType = ui.cmbDSType.currentText()
         self.ui.statusBar.showMessage('数据集读取中...')
@@ -272,9 +304,9 @@ class MainAppLogic():
         try:
             setSel = self.ui.cmbSubSet.currentText()
             if dsType == 'wider_face':
-                provider = wf_utils.WFUtils(dsFolder, setSel)
+                provider = wf_utils.WFUtils(dsFolder, setSel, dctCfg)
             elif dsType == 'crowd_human':
-                provider = ch_utils.CrowdHumanUtils(dsFolder, setSel)
+                provider = ch_utils.CrowdHumanUtils(dsFolder, setSel, dctCfg)
         except Exception as e:
             print(e)
             self.ui.statusBar.showMessage('代码错误：\n' + str(e))
@@ -287,7 +319,7 @@ class MainAppLogic():
             _translate = QtCore.QCoreApplication.translate
             MainWindow.setWindowTitle(_translate("MainWindow", "数据集化简分割工具 - 源数据集路径：%s" % (self.dsFolder)))            
             self.dataObj = patcher.Patcher(provider)
-            self.ui.statusBar.showMessage('数据集读取成功!')
+            self.ui.statusBar.showMessage('数据集%s (%s)读取成功!' % (dsFolder, dsType))
             for item in self.chkTags:
                 chk = item[0]
                 chk.hide()

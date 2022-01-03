@@ -8,7 +8,7 @@ import time
 
 
 class CrowdHumanUtils():
-    def __init__(self, dsFolder = '.', setSel='train', maxCnt=5000, isShuffle=True):
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, maxCnt=5000, isShuffle=True):
         self.pathBBox = '%s/annotation_%s.odgt' % (dsFolder, setSel)
         self.dctFiles = {}
         self.setSel = setSel
@@ -20,6 +20,13 @@ class CrowdHumanUtils():
         self._unsureCnt = 0
         self._ignoreCnt = 0
         self._noHeadCnt = 0
+        minHvsW, maxHvsW = 1.0, 6.0
+        try:
+            minHvsW = dctCfg['minHvsW']
+            maxHvsW = dctCfg['maxHvsW']
+        except:
+            pass
+
         print('扫描zip数据集之%s部分' % (setSel))
         sPrefix = dsFolder + '/CrowdHuman_' + setSel
         for i in range(100):
@@ -78,7 +85,7 @@ class CrowdHumanUtils():
                 if xywh[2] == 0:
                     continue
                 aspect = xywh[3]  / xywh[2]
-                if aspect < 1.0 or aspect > 6.0:
+                if aspect < minHvsW or aspect > maxHvsW:
                     continue
                 areaAverage += area
                 if 'head_attr' in gtIn.keys():

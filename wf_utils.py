@@ -1,7 +1,8 @@
 class WFUtils():
-    def __init__(self, dsFolder = '.', setSel='train'):
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}):
         self.dsFolder = dsFolder
         self.setSel = setSel
+        self.dctCfg = {}
         self.pathBBox = '%s/wider_face_split/wider_face_%s_bbx_gt.txt' % (dsFolder, setSel)
         self.dctFiles = None
         fd = open(self.pathBBox)
