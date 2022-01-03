@@ -105,9 +105,11 @@ class CrowdHumanUtils():
             # 删除面积过小的
             lstPassed = []
             for dctItem in lstBBoxes:
-                if dctItem['area'] * 10 < areaAverage or dctItem['area'] > areaAverage * 5:
+                if dctItem['area'] * 3 < areaAverage or dctItem['area'] > areaAverage * 3:
                     continue
                 lstPassed.append(dctItem)
+            lstPassed.sort(key=lambda x: x['area'],reverse=True)
+
             if len(lstPassed) > 0:
                 self.dctFiles['Images/' + dctIn['ID'] + '.jpg'] = {
                     'cnt0' : len(dctIn['gtboxes']),

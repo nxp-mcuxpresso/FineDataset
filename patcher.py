@@ -5,6 +5,8 @@ import os.path as path
 import os
 import json
 import random
+
+from numpy.lib.type_check import isreal
 def DelTree(treeName, isDelDir=False, isDelRoot=False):
     'delete a tree, recursively, it can be non empty!'
     if not path.exists(treeName):
@@ -33,9 +35,9 @@ class Patcher():
         self.dctFiles = provider.dctFiles
         self.provider = provider
 
-    def GetClusters(self, ndx, closeRate=0.5, isShow=True, allowedTags=['*'], maxPairs=200):
+    def GetClusters(self, ndx, minClose=0.5, isShow=True, allowedTags=['*'], maxPairs=200):
         '''
-        GetClusters: 获取图片中人脸的群聚。closeRate表示bbox的面积之和除以这些bbox的总面积
+        GetClusters: 获取图片中人脸的群聚。minClose表示bbox的面积之和除以这些bbox的总面积
         返回 [[二个脸的框], [三个脸的框], [多个脸的框]], opencv标注后的图
         '''
         strFile = list(self.dctFiles.keys())[ndx]
@@ -77,30 +79,41 @@ class Patcher():
                 ho = y2o - y1o
                 areaO = wo * ho
                 areaIJ = wi * hi + wj * hj
-                if areaIJ / areaO >= closeRate:
+                closeRate = areaIJ / areaO
+                if closeRate >= minClose:
                     dctBbox = {
                         'x1' : x1o,
                         'y1' : y1o,
                         'w': x2o - x1o,
                         'h': y2o - y1o,
                     }
-                    lstPairs.append([[b1, b2], (x1o, y1o), (x2o, y2o), dctBbox, areaIJ])
+                    lstPairs.append([[b1, b2], (x1o, y1o), (x2o, y2o), dctBbox, areaIJ, closeRate, [i, j]])
+        random.shuffle(lstPairs)
+        # lstPairs.sort(key=lambda x:x[5], reverse=True)
         # 再获取靠近的三元组
         if len(lstPairs) > maxPairs:
-            random.shuffle(lstPairs)
             lstPairs = lstPairs[:maxPairs]
         lstTrints = []
+        setIDs = set()
         for i in range(len(lstPairs)):
             pair = lstPairs[i]
             b1 = pair[3]
             wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(b1)
             for j in range(bboxCnt):
+                if j == pair[6][0] or j == pair[6][1]:
+                    # 重复的原始框
+                    continue
+                # 计算每个三元组的唯一ID。要求图片中原始框的数量不能超过1024
+                lstKeys=[pair[6][0], pair[6][1], j]
+                lstKeys.sort()
+                id = lstKeys[0] + (lstKeys[1] << 10) + (lstKeys[2] << 20)
+                if id in setIDs:
+                    continue
+                setIDs.add(id)
                 b2 = item['xywhs'][j]
                 if not b2['tag'] in allowedTags:
                     if '*' != allowedTags[0]:
-                        continue                
-                if b2 == pair[0][0] or b2 == pair[0][1]:
-                    continue
+                        continue
                 wj, hj, x1j, y1j, x2j, y2j, cxj, cyj, sqrtAj = _getValues(b2)
                 x1o = x1i if x1i < x1j else x1j
                 y1o = y1i if y1i < y1j else y1j
@@ -110,28 +123,30 @@ class Patcher():
                 ho = y2o - y1o
                 areaO = wo * ho
                 areaIJ = pair[4] + wj * hj
-                if areaIJ / areaO >= closeRate * 2 / 3:
+                closeRate = areaIJ / areaO
+                if closeRate >= minClose * 2 / 3:
                     dctBbox = {
                         'x1' : x1o,
                         'y1' : y1o,
                         'w': x2o - x1o,
                         'h': y2o - y1o
                     }
-                    tmp = lstPairs[i][0]  + [b2]
-                    isRepeat = False
-                    for ele in lstTrints:
-                        if ele[1] == (x1o, y1o) or ele[2] == (x2o, y2o):
-                            isRepeat = True
-                            break
-                    if isRepeat == False:               
-                        lstTrints.append([tmp, (x1o, y1o), (x2o, y2o), dctBbox, areaIJ])                
+                    lstTmp = pair[6].copy()
+                    lstTmp.append(j)
+                    lstTmp.sort()
+                    lstTrints.append([pair[0] + [b2], (x1o, y1o), (x2o, y2o), dctBbox, areaIJ,closeRate, lstTmp])       
+        lstTrints.sort(key=lambda x:x[5], reverse=False)
+        if len(lstTrints) > maxPairs:
+            lstTrints = lstTrints[:maxPairs]        
         # 在三元组中合并交并比比较大的
         lstMulti = []
-        for i in range(len(lstTrints)):
-            b1 = lstTrints[i][3]
+        lstIn = lstTrints
+        for i in range(len(lstIn)):
+            multiIn = lstIn[i]
+            b1 = multiIn[3]
             wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(b1)
-            for j in range(i + 1, len(lstTrints)):
-                b2 = lstTrints[j][3]
+            for j in range(i + 1, len(lstIn)):
+                b2 = lstIn[j][3]
                 wj, hj, x1j, y1j, x2j, y2j, cxj, cyj, sqrtAj = _getValues(b2)
 
                 x1o = x1i if x1i < x1j else x1j
@@ -144,44 +159,97 @@ class Patcher():
                 x2It = x2i if x2i < x2j else x2j
                 y2It = y2i if y2i < y2j else y2j
                 if x1It >= x2It or y1It >= y2It:
+                    # 不相交的两个框
                     continue
                 itArea = (x2It - x1It) * (y2It - y1It)
                 unArea = (x2o - x1o) * (y2o - y1o)
                 iou = itArea / unArea
                 if iou < 0.5 or iou > 0.99:
                     continue
-                lstItBoxes = []
-                # 去重
-                lstTmp = lstTrints[i][0] + lstTrints[j][0]
-                lstItBox = []
-                areaIJ = 0
-                for ii in range(6):
-                    isRepeat = False
-                    for jj in range(ii + 1, 6):
-                        if jj == ii:
-                            continue
-                        if lstTmp[ii] == lstTmp[jj]:
-                            isRepeat = True
-                            break
-                    if isRepeat:
-                        continue
-                    areaIJ += lstTmp[ii]['w'] * lstTmp[ii]['h']
-                    lstItBox.append(lstTmp[ii])
                 dctBbox = {
                     'x1' : x1o,
                     'y1' : y1o,
                     'w': x2o - x1o,
                     'h': y2o - y1o
                 }
+                # 检查dctBbox是不是已经出现在已有的里了
                 isRepeat = False
-                for ele in lstMulti:
-                    if ele[1] == (x1o, y1o) or ele[2] == (x2o, y2o):
+                for tmp in lstMulti:
+                    bB1 = tmp[3]
+                    if bB1['x1'] == x1o and bB1['y1'] == y1o and bB1['w'] == x2o-x1o and bB1['h'] == y2o - y1o:
                         isRepeat = True
                         break
-                if isRepeat == False:
-                    areaO = dctBbox['w'] * dctBbox['h']
-                    if areaIJ / areaO >= closeRate:
-                        lstMulti.append([lstItBox, (x1o, y1o), (x2o, y2o), dctBbox, areaIJ])
+                if isRepeat:
+                    continue
+                areaO = dctBbox['w'] * dctBbox['h']
+                closeRate = areaIJ / areaO
+                if closeRate >= minClose:
+                    # 找到原始框标号的并集
+                    set1 = set(multiIn[6])
+                    set2 = set(lstIn[j][6])
+                    set3 = set1.union(set2)
+                    lstTmp = list(set3)
+                    # 找到物体框的并集
+                    lstUn = [item['xywhs'][x] for x in lstTmp]
+                    lstMulti.append([lstUn, (x1o, y1o), (x2o, y2o), dctBbox, areaIJ, closeRate, lstTmp])
+        # 最后一次合并
+        lstMulti.sort(key=lambda x:x[5], reverse=False)
+        if len(lstMulti) > maxPairs:
+            lstMulti = lstMulti[:maxPairs]         
+        lstIn = lstMulti
+        lstMulti = []
+        for i in range(len(lstIn)):
+            multiIn = lstIn[i]
+            b1 = multiIn[3]
+            wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(b1)
+            for j in range(i + 1, len(lstIn)):
+                b2 = lstIn[j][3]
+                wj, hj, x1j, y1j, x2j, y2j, cxj, cyj, sqrtAj = _getValues(b2)
+
+                x1o = x1i if x1i < x1j else x1j
+                y1o = y1i if y1i < y1j else y1j
+                x2o = x2i if x2i > x2j else x2j
+                y2o = y2i if y2i > y2j else y2j
+                # 相交区
+                x1It = x1i if x1i > x1j else x1j
+                y1It = y1i if y1i > y1j else y1j
+                x2It = x2i if x2i < x2j else x2j
+                y2It = y2i if y2i < y2j else y2j
+                if x1It >= x2It or y1It >= y2It:
+                    # 不相交的两个框
+                    continue
+                itArea = (x2It - x1It) * (y2It - y1It)
+                unArea = (x2o - x1o) * (y2o - y1o)
+                iou = itArea / unArea
+                if iou < 0.5 or iou > 0.99:
+                    continue
+                dctBbox = {
+                    'x1' : x1o,
+                    'y1' : y1o,
+                    'w': x2o - x1o,
+                    'h': y2o - y1o
+                }
+                # 检查dctBbox是不是已经出现在已有的里了
+                isRepeat = False
+                for tmp in lstMulti:
+                    bB1 = tmp[3]
+                    if bB1['x1'] == x1o and bB1['y1'] == y1o and bB1['w'] == x2o-x1o and bB1['h'] == y2o - y1o:
+                        isRepeat = True
+                        break
+                if isRepeat:
+                    continue
+                areaO = dctBbox['w'] * dctBbox['h']
+                closeRate = areaIJ / areaO
+                if closeRate >= minClose:
+                    # 找到原始框标号的并集
+                    set1 = set(multiIn[6])
+                    set2 = set(lstIn[j][6])
+                    set3 = set1.union(set2)
+                    lstTmp = list(set3)
+                    # 找到物体框的并集
+                    lstUn = [item['xywhs'][x] for x in lstTmp]
+                    lstMulti.append([lstUn, (x1o, y1o), (x2o, y2o), dctBbox, areaIJ, closeRate, lstTmp])
+
         self.provider.MapFile(strFile)
         image = Image.open(self.provider.MapFile(strFile))
         img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
@@ -209,12 +277,12 @@ class Patcher():
     '''
     CutPatches: 切割出包含一簇人脸的图片
     '''
-    def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[0.95, 0.7], outSize = [96, 128], \
+    def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[1.00, 0.8], outSize = [96, 128], \
             ndx=-1, strFile='', maxObjPerCluster=5, closeRatio=0.333, lstClusters=[], maxPatchPerImg=16, allowedTags=['*']):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
         lstRet, img = self.GetClusters(ndx, isShow=False, allowedTags=allowedTags)
-        lstOriPats = lstRet[0] + lstRet[1] + lstRet[2]
+        lstOriPats = lstRet[2] + lstRet[1] + lstRet[0]
         # item = self.dctFiles[strFile]
         if len(lstOriPats) < 1:
             return patchNdx, []
@@ -223,7 +291,7 @@ class Patcher():
         image = Image.open(self.provider.MapFile(strFile))
         lstPatches = []
         wVsH = outSize[0] / outSize[1]
-        random.shuffle(lstOriPats)
+        # random.shuffle(lstOriPats)
         # pat打包格式：[[子框],(x1, y1),(x2,y2), bbox, 面积]
         for (i, pat) in enumerate(lstOriPats):
             if len(pat[0]) > maxObjPerCluster:
@@ -277,6 +345,7 @@ class Patcher():
                 dct = {'filename' : sOutFileName}
                 lstBBxyxys = []
                 for subBox in pat[0]:
+                    # 去除经过剪裁后已经位于外面的物体框
                     ptx1 = subBox['x1'] - x12
                     pty1 = subBox['y1'] - y12
                     ptx2 = ptx1 + subBox['w']
@@ -416,7 +485,7 @@ class Patcher():
 
 
     def ShowRandomValidate(self, strOutFolder):
-        with open("./%s/bboxes.json" % (strOutFolder)) as fd:
+        with open("%s/bboxes.json" % (strOutFolder)) as fd:
             lst = json.load(fd)
         cnt = len(lst)
         ndx = np.random.randint(cnt)

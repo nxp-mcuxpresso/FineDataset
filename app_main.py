@@ -23,7 +23,7 @@ class MainAppLogic():
         ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
         ui.cmbDSType.setCurrentIndex(1)
         ui.cmbSubSet.addItems(['train','val'])
-        ui.cmbMaxFacesPerCluster.addItems(['6','5', '4', '3', '2'])
+        ui.cmbMaxFacesPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
         ui.cmbCloseRatio.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         ui.cmbCloseRatio.setCurrentIndex(2)
         #ui.cmbSubSet.currentIndexChanged.connect(lambda: LoadDataset(ui))
@@ -55,7 +55,7 @@ class MainAppLogic():
         self.lstPatches = []
         self.strOutFolder = ''
         self.chkTags = []
-        self.LoadDataset('../dataset_crowd/')
+        self.LoadDataset('q:/datasets/dataset_crowd/')
 
     def OnTimeout_tmrToHidePgsBar(self):
         self.ui.pgsBar.setVisible(False)
@@ -243,7 +243,8 @@ class MainAppLogic():
               
     def GetAllowedTags(self):
         lstTags = []
-        for chk in self.chkTags:
+        for item in self.chkTags:
+            chk = item[0]
             if chk.isChecked():
                 lstTags.append(chk.text())
         return lstTags
@@ -273,20 +274,22 @@ class MainAppLogic():
             MainWindow.setWindowTitle(_translate("MainWindow", "数据集化简分割工具 - 源数据集路径：%s" % (self.dsFolder)))            
             self.dataObj = patcher.Patcher(provider)
             self.ui.statusBar.showMessage('数据集读取成功!')
-            for chk in self.chkTags:
+            for item in self.chkTags:
+                chk = item[0]
                 chk.hide()
                 chk.deleteLater()
             self.chkTags = []
             topFiller = QWidget()
-            topFiller.setMinimumSize(100, 500)
             for (i, tag) in enumerate(list(self.provider.GetTagSet())):
                 chk = QCheckBox(topFiller)
                 chk.setText(tag)
                 chk.setChecked(True)
-                chk.isChecked()
-                chk.move(4, 5 + i * 20)
-                self.chkTags.append(chk, chk.text())
-                
+                chk.isChecked()                
+                self.chkTags.append([chk, chk.text()])
+                self.chkTags.sort(key=lambda x:x[1], reverse=False)
+            for (i, item) in enumerate(self.chkTags):
+                item[0].move(4, 5 + i * 20)
+            topFiller.setMinimumSize(100, len(self.chkTags) * 20)
             mainUI.scrollTags.setWidget(topFiller)
 
 if __name__ == '__main__':
