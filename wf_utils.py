@@ -1,5 +1,7 @@
 class WFUtils():
     def __init__(self, dsFolder = '.', setSel='train'):
+        self.dsFolder = dsFolder
+        self.setSel = setSel
         self.pathBBox = '%s/wider_face_split/wider_face_%s_bbx_gt.txt' % (dsFolder, setSel)
         self.dctFiles = None
         fd = open(self.pathBBox)
@@ -12,11 +14,14 @@ class WFUtils():
         bboxRem = 0
         lstBBoxes = []
         self.dctFiles = {}
+        self.dctFileKeyMapper = {}
         print('scaning')
         for strLine in lstLines:
             strLine = strLine.strip()
             if st == STATE_WANT_FILENAME:
-                strFileName = './WIDER_%s/images/%s' % (setSel, strLine)
+                strFileName = '%s/WIDER_%s/images/%s' % (dsFolder, setSel, strLine)
+                fileKey = strLine.split('/')[-1]
+                self.dctFileKeyMapper[fileKey] = strFileName
                 st = STATE_WANT_BBOX_CNT
             elif st == STATE_WANT_BBOX_CNT:
                 nBBoxCnt = int(strLine)
@@ -46,7 +51,7 @@ class WFUtils():
                     if bboxRem == 0:
                         st = STATE_WANT_FILENAME
                         if len(lstBBoxes) > 0:
-                            self.dctFiles[strFileName] = {
+                            self.dctFiles[fileKey] = {
                                 'cnt0' : nBBoxCnt,
                                 'cnt' : len(lstBBoxes),
                                 'xywhs' : lstBBoxes
@@ -56,19 +61,31 @@ class WFUtils():
         k2 = sorted(self.dctFiles.keys())
 
         dctRet = {}
-        for k in k2:
+        for (i,k) in enumerate(k2):
             dctRet[k] = self.dctFiles[k]
         self.dctFiles = dctRet
     
-    def MapFile(strFile:str):
-        return strFile
+    def MapFile(self, strFile:str):
+        return self.dctFileKeyMapper[strFile]
     
     def GetTagSet(self):
         return {'face'}
 
+    '''
+        根据 fileKey反查在 dctFiles中的key
+    '''
+    def MapFileKey(self, fileKey):
+        mapped  = fileKey
+        exts = ['.jpg', '.jpeg']
+        for ext in exts:
+            sKey = mapped + ext
+            if  sKey in self.dctFiles.keys():
+                return mapped + ext
+        return ''
+
 if __name__ == '__main__':
     import patcher
-    obj = patcher.Patcher(WFUtils('train').dctFiles)
+    obj = patcher.Patcher(WFUtils(dsFolder = 'q:/datasets/wider_face/',setSel='train'))
     print(len(obj.dctFiles))
     obj.ShowClusterRandom()
     print('done!')

@@ -19,9 +19,9 @@ class MainAppLogic():
     def __init__(self, ui:widertools.Ui_MainWindow, mainWindow):
         self.ui = ui
         self.mainWindow = mainWindow
-        self.prevImgItem = None
+        self.oriImage = ''
         ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
-        ui.cmbDSType.setCurrentIndex(1)
+        ui.cmbDSType.setCurrentIndex(0)
         ui.cmbSubSet.addItems(['train','val'])
         ui.cmbMaxFacesPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
         ui.cmbCloseRatio.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
@@ -30,11 +30,13 @@ class MainAppLogic():
         ui.cmbSubSet.textActivated.connect(lambda: self.LoadDataset())
         #ui.cmbSubSet.highlighted.connect(lambda: LoadDataset(ui)) 
         ui.btnRandom.clicked.connect(self.OnClicked_Random)
-        ui.btnSplitSingle.clicked.connect(self.OnClicked_SplitSingle)
         ui.btnGenSingleFaceDataSet.clicked.connect(self.OnClicked_GenSingleFaceDataset)
         ui.btnValidateSingleFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
-        ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateMultiFaceDataset)        
+        ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateMultiFaceDataset) 
+        ui.btnOriImg.clicked.connect(self.OnClicked_OriImage)       
         ui.btnGenMultiFaceDataSet.clicked.connect(self.OnClicked_GenMultiFaceDataset)
+        ui.btnTagSelAll.clicked.connect(self.OnClicked_TagSelAll)
+        ui.btnTagSelInv.clicked.connect(self.OnClicked_TagSelInv)        
         ui.btnDSFolder.clicked.connect(self.OnClicked_DSFolder)
         ui.btnToVoc.clicked.connect(self.OnClicked_ToVOC)
         ui.pgsBar.setVisible(False)
@@ -55,14 +57,13 @@ class MainAppLogic():
         self.lstPatches = []
         self.strOutFolder = ''
         self.chkTags = []
-        self.LoadDataset('q:/datasets/dataset_crowd/')
+        self.LoadDataset('q:/datasets/wider_face')
 
     def OnTimeout_tmrToHidePgsBar(self):
         self.ui.pgsBar.setVisible(False)
 
-    def ShowImage(self, table, ndx, strKey):
+    def ShowImage(self, table, strKey):
         item = self.dataObj.dctFiles[strKey]
-        self.prevImgItem = [table, ndx, strKey, item]
         c = table.shape
         qImg = QtGui.QImage(bytearray(table), c[1], c[0], c[1]*3, QtGui.QImage.Format_BGR888)
         pix = QPixmap(QPixmap.fromImage(qImg))
@@ -101,18 +102,8 @@ class MainAppLogic():
         self.ui.statusBar.showMessage('已保存到%s' % sOutFile, 5000)
 
     def OnClicked_Random(self):
-        [table,ndx, strKey] = self.dataObj.ShowRandom(False, allowedTags=self.GetAllowedTags())
-        self.ShowImage(table, ndx, strKey)
-
-    def OnClicked_SplitSingle(self):
-        if self.prevImgItem is None:
-            return
-        outX = int(self.ui.txtOutX.text())
-        outY = int(self.ui.txtOutY.text())
-        self.patchNdx, lstPatches = self.dataObj.CutPatches(self.patchNdx, ndx=self.prevImgItem[1], outSize=[outX, outY])
-        self.lstPatches += lstPatches
-        with open('bboxes.json', 'w', encoding='utf-8') as fd:
-            json.dump(self.lstPatches, fd, indent=4)
+        [table, strKey] = self.dataObj.ShowRandom(False, allowedTags=self.GetAllowedTags())
+        self.ShowImage(table, strKey)
 
     def OnClicked_DSFolder(self):
         dir_choose = QFileDialog.getExistingDirectory(MainWindow,  
@@ -223,9 +214,9 @@ class MainAppLogic():
         self.ui.tmrToHidePgsBar.start()
         # self.ui.pgsBar.setVisible(False)
 
-    def OnClicked_ValidateFaceDataset(self, strSel='single'):
+    def OnClicked_ValidateDataset(self, strSel='single'):
         strOutFolder = './out_%s_%s' % (self.ui.cmbSubSet.currentText(), strSel)
-        table = self.dataObj.ShowRandomValidate(strOutFolder)
+        table, ndx, item = self.dataObj.ShowRandomValidate(strOutFolder)
         c = table.shape
         qImg = QtGui.QImage(bytearray(table), c[1], c[0], c[1]*3, QtGui.QImage.Format_BGR888)
         pix = QPixmap(QPixmap.fromImage(qImg))
@@ -233,14 +224,37 @@ class MainAppLogic():
         rect = self.ui.lblImg.rect()
         pix3 = pix.scaled(rect.width(),rect.height(), Qt.KeepAspectRatio)
         # ui.imgWnd.setPixmap(pix2)
-        self.ui.lblImg.setPixmap(pix3)             
+        self.ui.lblImg.setPixmap(pix3)
+        self.ui.statusBar.showMessage('图片 %s' % item['filename']) 
+        
+        fileNameNoPath = item['filename'].split('/')[-1]
+        [mainName, ext] = path.splitext(fileNameNoPath)
+        mainName = '_'.join(mainName.split('_')[:-2])
+        fileNameKey = mainName
+        self.oriImage = self.dataObj.provider.MapFileKey(fileNameKey)
+        bkpt = 0
 
     def OnClicked_ValidateSingleFaceDataset(self, strSel='single'):
-        self.OnClicked_ValidateFaceDataset('single')
+        self.OnClicked_ValidateDataset('single')
 
     def OnClicked_ValidateMultiFaceDataset(self, strSel='single'):
-        self.OnClicked_ValidateFaceDataset('multi')        
-              
+        self.OnClicked_ValidateDataset('multi')        
+    
+    def OnClicked_OriImage(self):
+        if len(self.oriImage) > 0:
+            [table, strKey] = self.dataObj.ShowImageFile(self.oriImage, False, allowedTags=self.GetAllowedTags())
+            self.ShowImage(table, strKey)        
+
+    def OnClicked_TagSelAll(self):
+        for item in self.chkTags:
+            chk = item[0]
+            chk.setChecked(True)
+
+    def OnClicked_TagSelInv(self):
+        for item in self.chkTags:
+            chk = item[0]
+            chk.setChecked(not chk.isChecked())
+
     def GetAllowedTags(self):
         lstTags = []
         for item in self.chkTags:

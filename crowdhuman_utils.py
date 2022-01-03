@@ -78,7 +78,7 @@ class CrowdHumanUtils():
                 if xywh[2] == 0:
                     continue
                 aspect = xywh[3]  / xywh[2]
-                if aspect < 1.0 or aspect > 4.0:
+                if aspect < 1.0 or aspect > 6.0:
                     continue
                 areaAverage += area
                 if 'head_attr' in gtIn.keys():
@@ -131,6 +131,16 @@ class CrowdHumanUtils():
     def GetTagSet(self):
         return self.setTags
     
+    '''
+        根据 fileKey反查在 dctFiles中的key
+    '''
+    def MapFileKey(self, fileKey):
+        mapped = 'Images/' + fileKey
+        exts = ['.jpg', '.jpeg']
+        for ext in exts:
+            if mapped + ext in self.dctFiles.keys():
+                return mapped + ext
+        return ''
 if __name__ == '__main__':
     print('Not meant to run as main! done!')
 
