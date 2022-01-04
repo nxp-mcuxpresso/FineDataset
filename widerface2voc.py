@@ -45,8 +45,8 @@ class WF2VOC():
     def __init__(self, setSel='train', cntSel='single', strRootPath = './wf_voc'):
         self.setSel = setSel
         self.cntSel = cntSel
-        self.strOutPath = './wf_voc_%s_%s' % (setSel, cntSel)
-        self.strInPath = './out_%s_%s' % (setSel, cntSel)
+        self.strOutPath = './outs/wf_voc_%s_%s' % (setSel, cntSel)
+        self.strInPath = './outs/out_%s_%s' % (setSel, cntSel)
     def MakeVOC(self, maxCnt=1E7, callback=None):
         if path.exists(self.strInPath):
             with open(self.strInPath + '/bboxes.json') as fd:

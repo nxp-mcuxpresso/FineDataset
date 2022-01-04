@@ -222,7 +222,7 @@ class MainAppLogic():
         # self.ui.pgsBar.setVisible(False)
 
     def OnClicked_ValidateDataset(self, strSel='single'):
-        strOutFolder = './out_%s_%s' % (self.ui.cmbSubSet.currentText(), strSel)
+        strOutFolder = './outs/out_%s_%s' % (self.ui.cmbSubSet.currentText(), strSel)
         table, ndx, item = self.dataObj.ShowRandomValidate(strOutFolder)
         c = table.shape
         qImg = QtGui.QImage(bytearray(table), c[1], c[0], c[1]*3, QtGui.QImage.Format_BGR888)
