@@ -35,7 +35,7 @@ class Patcher():
         self.dctFiles = provider.dctFiles
         self.provider = provider
 
-    def GetClusters(self, ndx, minClose=0.5, isShow=True, maxObjPerCluster=10, allowedTags=['*'], maxPairs=100):
+    def GetClusters(self, ndx, minClose=0.5, isDraw=False, isShow=True, maxObjPerCluster=10, allowedTags=['*'], maxPairs=100):
         '''
         GetClusters: 获取图片中人脸的群聚。minClose表示bbox的面积之和除以这些bbox的总面积
         返回 [[二个脸的框], [三个脸的框], [多个脸的框]], opencv标注后的图
@@ -235,15 +235,16 @@ class Patcher():
         self.provider.MapFile(strFile)
         image = Image.open(self.provider.MapFile(strFile))
         img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
-        if isShow:
+        if isDraw:
             for clst in lstNewPairs:
                 cv2.rectangle(img, clst[1], clst[2], (0, 0, 255), 2, 4)       
             for clst in lstNewTrints:
                 cv2.rectangle(img, clst[1], clst[2], (0, 255, 255), 2, 4)
             for clst in lstMulti:
                 cv2.rectangle(img, clst[1], clst[2], (255, 255, 255), 2, 4)     
-            cv2.imshow("OpenCV",img)
-            cv2.waitKey()
+            if isShow:
+                cv2.imshow("OpenCV",img)
+                cv2.waitKey()
         lstRet = [lstNewPairs, lstNewTrints, lstMulti]
         if len(lstRet) > 10:
             i = 0
@@ -252,7 +253,7 @@ class Patcher():
     def ShowClusterRandom(self, isShow=True):
         while True:
             ndx = np.random.randint(len(self.dctFiles))
-            lstRet, img = self.GetClusters(ndx, isShow=False)
+            lstRet, img = self.GetClusters(ndx, isShow=False, isDraw=True)
             if len(lstRet[2]) > 0:
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
                 cv2.imshow("OpenCV",img)
@@ -466,7 +467,7 @@ class Patcher():
                 col = (bbox['isOverIllumination'] * 255,191,bbox['occlusion'] * 255)
                 cv2.rectangle(img, pt1, pt2, col, width, 4)
                 pt1 = (pt1[0], pt1[1]+15)
-                cv2.putText(img, 'pose:%d,occl:%d' % (bbox['isAtypicalPose'],  bbox['occlusion']) \
+                cv2.putText(img, '%s,%d' % (bbox['tag'],  bbox['occlusion']) \
                     , pt1, cv2.FONT_HERSHEY_PLAIN, width, col)
         if isShow:
             cv2.imshow("OpenCV",img)
@@ -498,6 +499,9 @@ class Patcher():
             pt2 = (bbox[2], bbox[3])
             col = (0,255,0)
             cv2.rectangle(img, pt1, pt2, col, 1, 4)
+            pt1 = (pt1[0], pt1[1]+15)
+            cv2.putText(img, '%s' % (bbox[4]) \
+                , pt1, cv2.FONT_HERSHEY_PLAIN, 1, col)
         return np.array(img), ndx, item
 
 if __name__ == '__main__':

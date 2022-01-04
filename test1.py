@@ -1,52 +1,135 @@
-import sys
+import tarfile
+import os.path as path
+import zipfile
+import io
+import glob
+import xmltodict
+class VOCUtils():
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+    def ParseAnno(self, an):
 
+        imgWH = [int(an['size']['width']), int(an['size']['height'])]
+        imgArea = imgWH[0] * imgWH[1]
+        lstXywhs = []
+        for obj in an['object']:
+            bndBox = obj['bndbox']
+            x = int(bndBox['xmin'])
+            y = int(bndBox['ymin'])
+            w = int(bndBox['xmax']) - x
+            h = int(bndBox['ymax']) - y
+            dctItem = {
+                'x1' : x,
+                'y1' : y,
+                'w': w,
+                'h': h,
+                'tag': obj['name'],
+                'blur': 0,
+                'difficult' : int(obj['difficult']),
+                'isOverIllumination': 0,
+                'occlusion' : int(obj['truncated']),
+                'isAtypicalPose': 1 if obj['pose'] != 'Frontal' else 0,
+                'isInvalid' : 0,
+            }
+            lstXywhs.append(dctItem)
+        return lstXywhs
 
-class Delegate(QtWidgets.QStyledItemDelegate):
-    def editorEvent(self, event, model, option, index):
-        checked = index.data(QtCore.Qt.CheckStateRole)
-        ret = QtWidgets.QStyledItemDelegate.editorEvent(self, event, model, option, index)
-        if checked != index.data(QtCore.Qt.CheckStateRole):
-            self.parent().checked.emit(index)
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}):
+        self.dsFolder = dsFolder
+        self.dctFiles = dict()
+        self.setSel = setSel
+        self.dctCfg = {}
+        self.isTarMode = True
+        # 扫描所有数据集
+        if path.exists(dsFolder + '/Annotations') and path.exists(dsFolder + '/JPEGImages'):
+            self.isTarMode = False
+            lstFiles = glob.glob(dsFolder + '/Annotations/*.xml')
+            lstFiles = [x.replace('\\', '/') for x in lstFiles]
+            for sFile in lstFiles:
+                fd = open(sFile)
+                an = xmltodict.parse(fd.read())['annotation']
+                fd.close()
+                if isinstance(an['object'],list) == False:
+                    an['object'] = [an['object']]
+                lstBBoxes = self.ParseAnno(an)
+                if len(lstBBoxes) > 0:
+                    fileKey = path.splitext(path.split(sFile)[-1])[0]
+                    self.dctFiles[fileKey] = {
+                        'cnt0' : len(an['object']),
+                        'cnt' : len(lstBBoxes),
+                        'xywhs' : lstBBoxes
+                    }
+
+        else:
+            # 扫描所有符合setSel要求的VOC tar文件
+            lstFiles = list(set(glob.glob('%s/*voc*.tar' % (dsFolder))).union(glob.glob('%s/*VOC*.tar' % (dsFolder))))
+            if len(lstFiles) == 0:
+                lstFiles = list(set(glob.glob('%s/*.tar' % (dsFolder))).union(glob.glob('%s/*.tar' % (dsFolder))))                
+            lstFiles = list(filter(lambda x: setSel in x, lstFiles))
+            lstFiles = [ x.replace('\\', '/') for x in lstFiles ]
+            self.lstTars = [tarfile.open(x) for x in lstFiles]
+            for tar in self.lstTars:
+                tar.getmembers
+            for (tarNdx, tar) in enumerate(self.lstTars):
+                lstTarInfos = tar.getmembers()
+                for info in lstTarInfos:
+                    if info.name[-3:] == 'xml':
+                        fd = tar.extractfile(info)
+                        an = xmltodict.parse(fd.read())['annotation']
+                        fd.close()
+                        if isinstance(an['object'],list) == False:
+                            an['object'] = [an['object']]
+                        lstBBoxes = self.ParseAnno(an)
+                        if len(lstBBoxes) > 0:
+                            fileKey = '{:02}_'.format(tarNdx) + info.name.split('/')[-1][:-4]
+                            self.dctFiles[fileKey] = {
+                                'cnt0' : len(an['object']),
+                                'cnt' : len(lstBBoxes),
+                                'xywhs' : lstBBoxes
+                            }                        
+
+    
+    def MapFile(self, strFileKey:str):
+        if self.isTarMode:
+            tarf = self.dctFile2Tarf[strFile]
+            fd = tarf.extractfile(strFile)        
+            data = fd.read()
+            fd.close()
+            ret = io.BytesIO(data)
+        else:
+            ret = self.dsFolder + '/JPEGImages/' + strFileKey + '.jpg'
         return ret
 
+        sFilePath = self.dctFileKeyMapper[strFile]
+        if path.exists(sFilePath):
+            return sFilePath
+        if self.zfDataFile is not None:
+            self.zfDataFile = zipfile('%s/WIDER_%s.zip' % (self.dsFolder, self.setSel))
+        fd = self.zfDataFile.open(strFile)
+        data = fd.read()
+        fd.close()
+        ret = io.BytesIO(data)
+        return ret        
 
-class ListView(QtWidgets.QListView):
-    checked = QtCore.pyqtSignal(QtCore.QModelIndex)
-    def __init__(self, *args, **kwargs):
-        super(ListView, self).__init__(*args, **kwargs)
-        self.setItemDelegate(Delegate(self))
+    
+    def GetTagSet(self):
+        return {'face'}
 
-
-class AppRemovalPage(QtWidgets.QWizardPage):
-    def __init__( self, parent=None):
-        super(AppRemovalPage, self).__init__(parent)
-        self.setTitle('Apps to Remove')
-        self.setSubTitle('Listview')
-        self.list_view = ListView(self)
-        self.list_view.setMinimumSize(465, 200)
-
-        self.model = QtGui.QStandardItemModel(self)
-        for line in ('a', 'b', 'c', 'd', 'e'):
-            self.item = QtGui.QStandardItem(line)
-            self.item.setCheckable(True)
-            self.item.setCheckState(QtCore.Qt.Unchecked)
-            self.model.appendRow(self.item)
-
-        self.list_view.setModel(self.model)
-        self.list_view.checked.connect(self.onChecked)
-
-    #@QtCore.pyqtSlot(QtCore.QModelIndex)
-    def onChecked(self, index):
-        item = self.model.itemFromIndex(index)
-        if item.checkState() == QtCore.Qt.Checked:
-            print(item.text(), "was checked")
-        else:
-            print(item.text(), "was unchecked")
+    '''
+        根据 fileKey反查在 dctFiles中的key
+    '''
+    def MapFileKey(self, fileKey):
+        mapped  = fileKey
+        exts = ['.jpg', '.jpeg']
+        for ext in exts:
+            sKey = mapped + ext
+            if  sKey in self.dctFiles.keys():
+                return mapped + ext
+        return ''
 
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
-    listview = AppRemovalPage()
-    listview.show()
-    sys.exit(app.exec_())
+    import patcher
+    obj = patcher.Patcher(VOCUtils(dsFolder = 'Q:/datasets/voc07+12/training/VOC2007/mini_voc07',setSel='train'))
+    print(len(obj.dctFiles))
+    obj.ShowClusterRandom()
+    print('done!')
+

@@ -1,3 +1,6 @@
+import os.path as path
+import zipfile
+import io
 class WFUtils():
     def __init__(self, dsFolder = '.', setSel='train', dctCfg={}):
         self.dsFolder = dsFolder
@@ -5,9 +8,30 @@ class WFUtils():
         self.dctCfg = {}
         self.pathBBox = '%s/wider_face_split/wider_face_%s_bbx_gt.txt' % (dsFolder, setSel)
         self.dctFiles = None
-        fd = open(self.pathBBox)
-        lstLines = fd.readlines()
-        fd.close()
+        self.zfDataFile = None
+
+        self.isZipMode = False
+
+        lstLines = []
+        if setSel == 'any':
+            lstSetSel = ['train', 'val', 'test']
+        else:
+            lstSetSel = [setSel]
+        for setSel in lstSetSel:
+            if path.exists(self.pathBBox):
+                fd = open(self.pathBBox)
+                lstLines = fd.readlines()
+                fd.close()
+            else:
+                self.zipAnnoPath = '%s/wider_face_split.zip' % (dsFolder)
+                zf = zipfile.ZipFile(self.zipAnnoPath)
+                fd = zf.open('wider_face_split/wider_face_train_bbx_gt.txt')
+                lstLines = fd.readlines()
+                fd.close() 
+                lstLines = [str(x, encoding='utf-8')[:-1] for x in lstLines]
+            if len(lstLines) > 0:
+                break
+
         STATE_WANT_FILENAME = 0
         STATE_WANT_BBOX_CNT = 1
         STATE_WANT_BBOX_ITEM = 2
@@ -67,7 +91,17 @@ class WFUtils():
         self.dctFiles = dctRet
     
     def MapFile(self, strFile:str):
-        return self.dctFileKeyMapper[strFile]
+        sFilePath = self.dctFileKeyMapper[strFile]
+        if path.exists(sFilePath):
+            return sFilePath
+        if self.zfDataFile is not None:
+            self.zfDataFile = zipfile('%s/WIDER_%s.zip' % (self.dsFolder, self.setSel))
+        fd = self.zfDataFile.open(strFile)
+        data = fd.read()
+        fd.close()
+        ret = io.BytesIO(data)
+        return ret        
+
     
     def GetTagSet(self):
         return {'face'}

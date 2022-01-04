@@ -27,21 +27,28 @@ class CrowdHumanUtils():
         except:
             pass
 
-        print('扫描zip数据集之%s部分' % (setSel))
-        sPrefix = dsFolder + '/CrowdHuman_' + setSel
-        for i in range(100):
-            if i != 0 or setSel != 'val':
-                sZipFile = sPrefix + '{:02}'.format(i + 1) + '.zip'
-            else:
-                sZipFile = sPrefix + '.zip'
-            if not path.exists(sZipFile):
-                continue
-            zf = zipfile.ZipFile(sZipFile)
-            self.lstZfs.append(zf)
-            for (i, obj) in enumerate(zf.filelist):
-                self.dctFile2Zf[obj.filename] = zf
-                self.lstFiles.append((obj.filename, obj.file_size))
-
+        lstLines = []
+        if setSel == 'any':
+            lstSetSel = ['train', 'val', 'test']
+        else:
+            lstSetSel = [setSel]
+        for setSel in lstSetSel:
+            print('扫描zip数据集之%s部分' % (setSel))
+            sPrefix = dsFolder + '/CrowdHuman_' + setSel
+            for i in range(100):
+                if i != 0 or setSel != 'val':
+                    sZipFile = sPrefix + '{:02}'.format(i + 1) + '.zip'
+                else:
+                    sZipFile = sPrefix + '.zip'
+                if not path.exists(sZipFile):
+                    continue
+                zf = zipfile.ZipFile(sZipFile)
+                self.lstZfs.append(zf)
+                for (i, obj) in enumerate(zf.filelist):
+                    self.dctFile2Zf[obj.filename] = zf
+                    self.lstFiles.append((obj.filename, obj.file_size))
+            if len(self.lstFiles) > 0:
+                break
 
         print('共扫描到%d张图片' % (len(self.lstFiles)))
         annoFile = dsFolder + '/annotation_%s.odgt' % (setSel)

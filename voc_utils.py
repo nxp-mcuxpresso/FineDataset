@@ -1,128 +1,160 @@
+import tarfile
 import os.path as path
-import json
-
 import zipfile
 import io
-import random
-import time
+import glob
+import xmltodict
+class VOCUtils():
 
+    def ParseAnno(self, an, dctNewCfg):
 
-class CrowdHumanUtils():
-    def __init__(self, dsFolder = '.', setSel='train', maxCnt=5000, isShuffle=True):
-        self.pathBBox = '%s/annotation_%s.odgt' % (dsFolder, setSel)
-        self.dctFiles = {}
+        imgWH = [int(an['size']['width']), int(an['size']['height'])]
+        imgArea = imgWH[0] * imgWH[1]
+        lstXywhs = []
+        for obj in an['object']:
+            bndBox = obj['bndbox']
+            x = int(bndBox['xmin'])
+            y = int(bndBox['ymin'])
+            w = int(bndBox['xmax']) - x
+            h = int(bndBox['ymax']) - y
+            hVSw = h / w
+            if hVSw < dctNewCfg['minHvsW'] or hVSw > dctNewCfg['maxHvsW']:
+                continue
+            self.setTags.add(obj['name'])
+            dctItem = {
+                'x1' : x,
+                'y1' : y,
+                'w': w,
+                'h': h,
+                'tag': obj['name'],
+                'blur': 0,
+                'difficult' : int(obj['difficult']),
+                'isOverIllumination': 0,
+                'occlusion' : int(obj['truncated']),
+                'isAtypicalPose': 1 if obj['pose'] != 'Frontal' else 0,
+                'isInvalid' : 0,
+            }
+            lstXywhs.append(dctItem)
+        return lstXywhs
+
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}):
+        self.dsFolder = dsFolder
+        self.setTags = set()
+        self.dctFiles = dict()
         self.setSel = setSel
-        self.dctFile2Zf = {}
-        self.lstZfs = []
-        self.lstFiles = []
-        self.lstAnnos = []
-        self._unsureCnt = 0
-        self._ignoreCnt = 0
-        self._noHeadCnt = 0
-        print('扫描zip数据集之%s部分' % (setSel))
-        sPrefix = dsFolder + '/CrowdHuman_' + setSel
-        for i in range(100):
-            if i != 0 or setSel != 'val':
-                sZipFile = sPrefix + '{:02}'.format(i + 1) + '.zip'
-            else:
-                sZipFile = sPrefix + '.zip'
-            if not path.exists(sZipFile):
-                continue
-            zf = zipfile.ZipFile(sZipFile)
-            self.lstZfs.append(zf)
-            for (i, obj) in enumerate(zf.filelist):
-                self.dctFile2Zf[obj.filename] = zf
-                self.lstFiles.append((obj.filename, obj.file_size))
+        self.dctCfg = {}
+        self.isTarMode = True
+        self.tarRoot = ''
+        minHvsW, maxHvsW = 0.1, 10.0
+        try:
+            minHvsW = dctCfg['minHvsW']
+            maxHvsW = dctCfg['maxHvsW']
+        except:
+            pass
+        dctNewCfg = {
+            'minHvsW' : minHvsW,
+            'maxHvsW' : maxHvsW
+        }
+        # 扫描所有数据集
+        if path.exists(dsFolder + '/Annotations') and path.exists(dsFolder + '/JPEGImages'):
+            self.isTarMode = False
+            lstFiles = glob.glob(dsFolder + '/Annotations/*.xml')
+            lstFiles = [x.replace('\\', '/') for x in lstFiles]
+            for sFile in lstFiles:
+                fd = open(sFile)
+                an = xmltodict.parse(fd.read())['annotation']
+                fd.close()
+                if isinstance(an['object'],list) == False:
+                    an['object'] = [an['object']]
+                lstBBoxes = self.ParseAnno(an, dctNewCfg)
+                if len(lstBBoxes) > 0:
+                    fileKey = path.splitext(path.split(sFile)[-1])[0]
+                    self.dctFiles[fileKey] = {
+                        'cnt0' : len(an['object']),
+                        'cnt' : len(lstBBoxes),
+                        'xywhs' : lstBBoxes
+                    }
 
+        else:
+            # 扫描所有符合setSel要求的VOC tar文件
+            lstFiles = list(set(glob.glob('%s/*voc*.tar' % (dsFolder))).union(glob.glob('%s/*VOC*.tar' % (dsFolder))))
+            if len(lstFiles) == 0:
+                lstFiles = list(set(glob.glob('%s/*.tar' % (dsFolder))).union(glob.glob('%s/*.tar' % (dsFolder))))                
+            if setSel != 'any':
+                lstFiles = list(filter(lambda x: setSel in x, lstFiles))
+            lstFiles = [ x.replace('\\', '/') for x in lstFiles ]
+            self.lstTars = [tarfile.open(x) for x in lstFiles]
+            if len(self.lstTars) == 0:
+                return
+            for tar in self.lstTars:
+                tar.getmembers
 
-        print('共扫描到%d张图片' % (len(self.lstFiles)))
-        annoFile = dsFolder + '/annotation_%s.odgt' % (setSel)
-        print('读取标注数据')
-        with open(annoFile) as fd:
-            lstLines = fd.readlines()
-            for (i, sLine) in enumerate(lstLines):
-                dct = json.loads(sLine)
-                self.lstAnnos.append(dct)
-        if isShuffle:
-            # 根据当前时间产生随机种子
-            random.seed(time.time())
-            random.shuffle(self.lstAnnos)
-        if maxCnt != 0 and len(self.lstAnnos) > maxCnt:
-            self.lstAnnos = self.lstAnnos[:maxCnt]
+            #查前缀
+            for info in self.lstTars[0].getmembers():
+                if info.name[-3:] == 'jpg':
+                    self.tarRoot = path.split(info.name)[0]
+                    break
 
-        for i in range(maxCnt):
-            dctIn = self.lstAnnos[i]
-            lstBBoxes = []
-            dctAreas = []
-            areaAverage = 0
-            for gtIn in dctIn['gtboxes']:
-                xywh = gtIn['vbox'] # fbox会把遮挡的部分也算进去
-                area = xywh[3] * xywh[2] / 100.0
-                dctItem = {
-                    'x1' : xywh[0],
-                    'y1' : xywh[1],
-                    'w': xywh[2],
-                    'h': xywh[3],
-                    'area': area,
-                    'tag': gtIn['tag'],
-                    'blur': 0,
-                    'isExaggerate': 0,
-                    'isOverIllumination': 0,
-                    'occlusion' : 0,
-                    'isAtypicalPose': 0,
-                    'isInvalid' : 0
-                }
-                # 我们在检测人体，所以滤除过小的
-                if xywh[2] == 0:
-                    continue
-                aspect = xywh[3]  / xywh[2]
-                if aspect < 1.0 or aspect > 4.0:
-                    continue
-                areaAverage += area
-                if 'head_attr' in gtIn.keys():
-                    dctHead = gtIn['head_attr']
-                    if 'occ' in dctHead.keys():
-                        dctItem['occlusion'] = dctHead['occ']
-                    if 'unsure' in dctHead.keys():
-                        unsure = dctHead['unsure']
-                        dctItem['isInvalid'] |= unsure
-                        self._unsureCnt += unsure
-                    if 'ignore' in dctHead.keys():
-                        ignore = dctHead['ignore']
-                        dctItem['isInvalid'] |= ignore
-                        self._ignoreCnt += ignore
-                else:
-                    self._noHeadCnt += 1 
-                    print('无head_attr: %s' % (dctIn['ID']))                               
-                if dctItem['occlusion'] != 0:
-                    continue
-                lstBBoxes.append(dctItem)
-            if len(lstBBoxes) == 0:
-                continue
-            areaAverage /= len(lstBBoxes)
-            # 删除面积过小的
-            lstPassed = []
-            for dctItem in lstBBoxes:
-                if dctItem['area'] * 10 < areaAverage or dctItem['area'] > areaAverage * 5:
-                    continue
-                lstPassed.append(dctItem)
-            if len(lstPassed) > 0:
-                self.dctFiles['Images/' + dctIn['ID'] + '.jpg'] = {
-                    'cnt0' : len(dctIn['gtboxes']),
-                    'cnt' : len(lstPassed),
-                    'xywhs' : lstPassed
-                }
-        
-        
+            for (tarNdx, tar) in enumerate(self.lstTars):
+                lstTarInfos = tar.getmembers()
+                for info in lstTarInfos:
+                    if info.name[-3:] == 'xml':
+                        fd = tar.extractfile(info)
+                        an = xmltodict.parse(fd.read())['annotation']
+                        fd.close()
+                        if isinstance(an['object'],list) == False:
+                            an['object'] = [an['object']]
+                        lstBBoxes = self.ParseAnno(an, dctNewCfg)
+                        if len(lstBBoxes) > 0:
+                            fileKey = '{:02}_'.format(tarNdx) + info.name.split('/')[-1][:-4]
+                            self.dctFiles[fileKey] = {
+                                'cnt0' : len(an['object']),
+                                'cnt' : len(lstBBoxes),
+                                'xywhs' : lstBBoxes
+                            }                        
+
         bkpt = 0
         
-    def MapFile(self, strFile:str):
-        zf = self.dctFile2Zf[strFile]
-        fd = zf.open(strFile)
+    def MapFile(self, strFileKey:str):
+        if self.isTarMode:
+            ndx = int(strFileKey[:2])
+            strFileKey = strFileKey[3:]
+            tarf = self.lstTars[ndx]
+            strFile = self.tarRoot + '/' + strFileKey + '.jpg'
+            fd = tarf.extractfile(strFile)        
+            data = fd.read()
+            fd.close()
+            ret = io.BytesIO(data)
+        else:
+            ret = self.dsFolder + '/JPEGImages/' + strFileKey + '.jpg'
+        return ret
+
+        sFilePath = self.dctFileKeyMapper[strFile]
+        if path.exists(sFilePath):
+            return sFilePath
+        if self.zfDataFile is not None:
+            self.zfDataFile = zipfile('%s/WIDER_%s.zip' % (self.dsFolder, self.setSel))
+        fd = self.zfDataFile.open(strFile)
         data = fd.read()
         fd.close()
         ret = io.BytesIO(data)
-        return ret
+        return ret        
+
+    
+    def GetTagSet(self):
+        return self.setTags
+
+    '''
+        根据 fileKey反查在 dctFiles中的key
+    '''
+    def MapFileKey(self, fileKey):
+        if fileKey in self.dctFiles.keys():
+            return fileKey
+        return ''
 if __name__ == '__main__':
-    print('Not meant to run as main! done!')
+    import patcher
+    obj = patcher.Patcher(VOCUtils(dsFolder = 'Q:/datasets/voc07+12/training/VOC2007/mini_voc07',setSel='train'))
+    print(len(obj.dctFiles))
+    obj.ShowClusterRandom()
+    print('done!')
 

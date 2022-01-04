@@ -13,6 +13,7 @@ import time
 import shutil
 import wf_utils
 import crowdhuman_utils as ch_utils
+import voc_utils
 from patcher import DelTree
 import patcher
 class MainAppLogic():
@@ -24,7 +25,7 @@ class MainAppLogic():
         self.nextDSFolder = ''
         ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
         ui.cmbDSType.setCurrentIndex(0)
-        ui.cmbSubSet.addItems(['train','val'])
+        ui.cmbSubSet.addItems(['train','val', 'any'])
         ui.cmbMaxFacesPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
         ui.cmbCloseRatio.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         ui.cmbCloseRatio.setCurrentIndex(2)
@@ -144,7 +145,7 @@ class MainAppLogic():
         cnt = len(self.dataObj.dctFiles.keys())
         ndc = np.arange(cnt)
         np.random.shuffle(ndc)
-        strOutFolder = './out_%s_multi' % (self.ui.cmbSubSet.currentText())
+        strOutFolder = './outs/out_%s_multi' % (self.ui.cmbSubSet.currentText())
         strOutFolder = self.GetNextFreeFolder(strOutFolder)
         self.strOutFolder = strOutFolder
         outX = int(self.ui.txtOutX.text())
@@ -186,7 +187,7 @@ class MainAppLogic():
         cnt = len(self.dataObj.dctFiles.keys())
         ndc = np.arange(cnt)
         np.random.shuffle(ndc)
-        strOutFolder = './out_%s_single' % (self.ui.cmbSubSet.currentText())
+        strOutFolder = './outs/out_%s_single' % (self.ui.cmbSubSet.currentText())
         strOutFolder = self.GetNextFreeFolder(strOutFolder)
         self.strOutFolder = strOutFolder
         outX = int(self.ui.txtOutX.text())
@@ -310,6 +311,8 @@ class MainAppLogic():
                 provider = wf_utils.WFUtils(dsFolder, setSel, dctCfg)
             elif dsType == 'crowd_human':
                 provider = ch_utils.CrowdHumanUtils(dsFolder, setSel, dctCfg)
+            elif dsType == 'voc':
+                provider = voc_utils.VOCUtils(dsFolder, setSel, dctCfg)
         except Exception as e:
             print(e)
             self.ui.statusBar.showMessage('代码错误：\n' + str(e))
