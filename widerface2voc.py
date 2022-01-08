@@ -1,4 +1,5 @@
 import json
+import shutil
 
 strPatten = '''
 <annotation>
@@ -41,13 +42,16 @@ import os
 # from wf_utils import DelTree
 from shutil import rmtree
 import cv2
+import tarfile
 class WF2VOC():
-    def __init__(self, setSel='train', cntSel='single', strRootPath = './wf_voc'):
+    def __init__(self, setSel='train', cntSel='single', strRootPath = './outs'):
         self.setSel = setSel
         self.cntSel = cntSel
         self.strOutPath = './outs/wf_voc_%s_%s' % (setSel, cntSel)
-        self.strInPath = './outs/out_%s_%s' % (setSel, cntSel)
-    def MakeVOC(self, maxCnt=1E7, callback=None):
+        self.strInPath = '%s/out_%s_%s' % (strRootPath, setSel, cntSel)
+        self.strRootPath = strRootPath
+
+    def MakeVOC(self, maxCnt=1E7, callback=None, isTarOnly=True):
         if path.exists(self.strInPath):
             with open(self.strInPath + '/bboxes.json') as fd:
                 self.lstBBoxes = json.load(fd)
@@ -57,28 +61,53 @@ class WF2VOC():
             rmtree(self.strOutPath)
         os.makedirs(path.join(self.strOutPath, "JPEGImages"))
         os.makedirs(path.join(self.strOutPath, "Annotations"))
+        cur_path = os.getcwd()
+        
         cnt = 0
         total = len(self.lstBBoxes)
+
+        os.chdir('./outs')
+        sTarFolder = 'wf_voc_%s_%s' % (self.setSel, self.cntSel)
+        tarf = tarfile.TarFile(sTarFolder + '.tar', 'w')
+        os.chdir(cur_path)
+
         for item in self.lstBBoxes:
-            sFileName = path.split(item['filename'])[1]            
-            img = cv2.imread(item['filename'])
-            sOutJpgPath = '%s/JPEGImages/%s.jpg' % (self.strOutPath, path.splitext(sFileName)[0])
+            sFileName = path.split(item['filename'])[1]
+            sMainName = path.splitext(sFileName)[0]
+            img = cv2.imread(self.strRootPath + '/' + item['filename'])
+            sOutJpgPath = '%s/JPEGImages/%s.jpg' % (self.strOutPath, sMainName)
+            
             cv2.imwrite(sOutJpgPath, img, [int(cv2.IMWRITE_JPEG_QUALITY),70])
+            
+            os.chdir('./outs')
+            tarf.add('%s/JPEGImages/%s.jpg' % (sTarFolder, sMainName))
+            os.chdir(cur_path)
+            if isTarOnly:
+                os.remove(sOutJpgPath)
             strOutFrame = strPatten % (self.setSel, self.cntSel, sFileName, img.shape[0], img.shape[1])
             for xyxy in item['xyxys']:
                 strVocBox = strObj % (xyxy[0], xyxy[1], xyxy[2], xyxy[3])
                 strOutFrame += strVocBox
             strOutFrame += '</annotation>\n'
             
-            sOutXmlPath = '%s/Annotations/%s.xml' % (self.strOutPath, path.splitext(sFileName)[0])
+            sOutXmlPath = '%s/Annotations/%s.xml' % (self.strOutPath, sMainName)
             with open(sOutXmlPath, 'w') as fd:
                 fd.write(strOutFrame)
+            os.chdir('./outs')
+            tarf.add('%s/Annotations/%s.xml' % (sTarFolder, sMainName))
+            os.chdir(cur_path)
+            if isTarOnly:
+                os.remove(sOutXmlPath)
             cnt += 1
             if callback is not None:
                 callback(100 * cnt / total)
             if cnt >= maxCnt:
                 break
+       
+        tarf.close()
+        if isTarOnly:
+            shutil.rmtree(self.strOutPath)
         return cnt
 if __name__ == '__main__':
     tester = WF2VOC('train','multi')
-    tester.MakeVOC(30)
+    tester.MakeVOC(50)

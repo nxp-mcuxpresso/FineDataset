@@ -335,7 +335,7 @@ class Patcher():
                 # patchImg = image[x12:x22, y12:y22]
                 cropped = image.crop((x12, y12, x22, y22))
 
-                sOutFileName = '%s/%s_%05d_%d.png' % (strOutFolder, sMainName, patchNdx, int(scaler * 100))
+                sOutFileName = '%s/%s_%05d_%d.png' % ('.' + strOutFolder[6:], sMainName, patchNdx, int(scaler * 100))
                 dct = {'filename' : sOutFileName}
                 lstBBxyxys = []
                 for subBox in pat[0]:
@@ -354,7 +354,7 @@ class Patcher():
                 if len(lstBBxyxys) > 0:
                     img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
                     img = cv2.resize(img,(outSize[0], outSize[1]), interpolation=cv2.INTER_LINEAR)                    
-                    cv2.imwrite(sOutFileName, img)
+                    cv2.imwrite('./outs/' + sOutFileName[2:], img)
                     dct['xyxys'] = lstBBxyxys
                     patchNdx += 1
                     newPatchCnt += 1
@@ -446,7 +446,7 @@ class Patcher():
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
                     cv2.imwrite(sOutFileName, img)
                     dct = {
-                        'filename' : sOutFileName,
+                        'filename' : '.' + sOutFileName[6:],
                         'xyxys' : [[ptx1, pty1, ptx2, pty2, tag]]
                     }
                     lstPatches.append(dct)

@@ -1,5 +1,6 @@
 import sys
 from PyQt5 import QtGui, QtCore
+import PyQt5
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QCheckBox, QWidget, QApplication, QMainWindow, QMessageBox, QStatusBar, QFileDialog
 from PyQt5.QtCore import Qt
@@ -345,6 +346,7 @@ class MainAppLogic():
             mainUI.scrollTags.setWidget(topFiller)
 
 if __name__ == '__main__':
+    QApplication.setAttribute(Qt.AA_DisableHighDpiScaling)
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
     ui = widertools.Ui_MainWindow()

@@ -4,6 +4,45 @@ import zipfile
 import io
 import glob
 import xmltodict
+import xml.dom.minidom
+import traceback
+import time
+def ParseNode(node):
+    if node.firstChild == node.lastChild:
+        return node.firstChild.nodeValue
+    else:
+        dct2 = dict()
+        for child in node.childNodes:
+            keyName = child.localName
+            if keyName is None:
+                continue
+            dct2[keyName] = ParseNode(child)
+        return dct2
+
+def Xml2Dict(xmlData):
+    dom1=xml.dom.minidom.parseString(xmlData)
+    root=dom1.documentElement
+    dct = dict()
+    for node in root.childNodes:
+        if node.nodeType == 3 and node.firstChild is None:
+            # 字符串节点
+            if node.localName is None:
+                # 缩进节点
+                continue
+        elif node.nodeType == 1:
+            # element节点
+            key = node.localName
+            parsed = ParseNode(node)
+            if key in dct.keys():
+                if isinstance(dct[key], list):
+                    dct[key].append(parsed)
+                else:
+                    dct[key] = [dct[key], parsed]
+            else:
+                dct[node.localName] = parsed
+    return dct
+
+
 class VOCUtils():
 
     def ParseAnno(self, an, dctNewCfg):
@@ -13,10 +52,10 @@ class VOCUtils():
         lstXywhs = []
         for obj in an['object']:
             bndBox = obj['bndbox']
-            x = int(bndBox['xmin'])
-            y = int(bndBox['ymin'])
-            w = int(bndBox['xmax']) - x
-            h = int(bndBox['ymax']) - y
+            x = int(float(bndBox['xmin']))
+            y = int(float(bndBox['ymin']))
+            w = int(float(bndBox['xmax'])) - x
+            h = int(float(bndBox['ymax'])) - y
             hVSw = h / w
             if hVSw < dctNewCfg['minHvsW'] or hVSw > dctNewCfg['maxHvsW']:
                 continue
@@ -30,10 +69,13 @@ class VOCUtils():
                 'blur': 0,
                 'difficult' : int(obj['difficult']),
                 'isOverIllumination': 0,
-                'occlusion' : int(obj['truncated']),
                 'isAtypicalPose': 1 if obj['pose'] != 'Frontal' else 0,
                 'isInvalid' : 0,
             }
+            if 'truncated' in obj.keys():
+                dctItem['occlusion'] = int(obj['truncated'])
+            else:
+                dctItem['occlusion'] = 0
             lstXywhs.append(dctItem)
         return lstXywhs
 
@@ -44,7 +86,7 @@ class VOCUtils():
         self.setSel = setSel
         self.dctCfg = {}
         self.isTarMode = True
-        self.tarRoot = ''
+        self.tarRoots = []
         minHvsW, maxHvsW = 0.1, 10.0
         try:
             minHvsW = dctCfg['minHvsW']
@@ -55,6 +97,7 @@ class VOCUtils():
             'minHvsW' : minHvsW,
             'maxHvsW' : maxHvsW
         }
+        t1 = time.time()
         # 扫描所有数据集
         if path.exists(dsFolder + '/Annotations') and path.exists(dsFolder + '/JPEGImages'):
             self.isTarMode = False
@@ -86,33 +129,37 @@ class VOCUtils():
             self.lstTars = [tarfile.open(x) for x in lstFiles]
             if len(self.lstTars) == 0:
                 return
-            for tar in self.lstTars:
-                tar.getmembers
-
-            #查前缀
-            for info in self.lstTars[0].getmembers():
-                if info.name[-3:] == 'jpg':
-                    self.tarRoot = path.split(info.name)[0]
-                    break
-
-            for (tarNdx, tar) in enumerate(self.lstTars):
-                lstTarInfos = tar.getmembers()
-                for info in lstTarInfos:
-                    if info.name[-3:] == 'xml':
-                        fd = tar.extractfile(info)
-                        an = xmltodict.parse(fd.read())['annotation']
-                        fd.close()
-                        if isinstance(an['object'],list) == False:
-                            an['object'] = [an['object']]
-                        lstBBoxes = self.ParseAnno(an, dctNewCfg)
-                        if len(lstBBoxes) > 0:
-                            fileKey = '{:02}_'.format(tarNdx) + info.name.split('/')[-1][:-4]
-                            self.dctFiles[fileKey] = {
-                                'cnt0' : len(an['object']),
-                                'cnt' : len(lstBBoxes),
-                                'xywhs' : lstBBoxes
-                            }                        
-
+            try:
+                for (tarNdx, tar) in enumerate(self.lstTars):
+                    lstTarInfos = tar.getmembers()
+                    #查前缀
+                    for info in lstTarInfos:
+                        if info.name[-3:] == 'jpg':
+                            self.tarRoots.append(path.split(info.name)[0])
+                            break                
+                    for info in lstTarInfos:
+                        if info.name[-3:] == 'xml':
+                            fd = tar.extractfile(info)
+                            datBlock = fd.read()
+                            an = xmltodict.parse(datBlock)['annotation']                            
+                            #an = Xml2Dict(datBlock)
+                            fd.close()
+                            if isinstance(an['object'],list) == False:
+                                an['object'] = [an['object']]
+                            lstBBoxes = self.ParseAnno(an, dctNewCfg)
+                            if len(lstBBoxes) > 0:
+                                fileKey = '{:02}_'.format(tarNdx) + info.name.split('/')[-1][:-4]
+                                self.dctFiles[fileKey] = {
+                                    'cnt0' : len(an['object']),
+                                    'cnt' : len(lstBBoxes),
+                                    'xywhs' : lstBBoxes
+                                }
+            except Exception as e:
+                print(e)
+                traceback.print_exc()
+                raise e
+        t2 = time.time()
+        dt = (t2 - t1)
         bkpt = 0
         
     def MapFile(self, strFileKey:str):
@@ -120,7 +167,7 @@ class VOCUtils():
             ndx = int(strFileKey[:2])
             strFileKey = strFileKey[3:]
             tarf = self.lstTars[ndx]
-            strFile = self.tarRoot + '/' + strFileKey + '.jpg'
+            strFile = self.tarRoots[ndx] + '/' + strFileKey + '.jpg'
             fd = tarf.extractfile(strFile)        
             data = fd.read()
             fd.close()
@@ -153,7 +200,7 @@ class VOCUtils():
         return ''
 if __name__ == '__main__':
     import patcher
-    obj = patcher.Patcher(VOCUtils(dsFolder = 'Q:/datasets/voc07+12/training/VOC2007/mini_voc07',setSel='train'))
+    obj = patcher.Patcher(VOCUtils(dsFolder = 'Q:/gitrepos',setSel='any'))
     print(len(obj.dctFiles))
     obj.ShowClusterRandom()
     print('done!')
