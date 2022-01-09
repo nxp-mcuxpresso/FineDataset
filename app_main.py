@@ -22,11 +22,16 @@ class MainAppLogic():
     def __init__(self, ui:widertools.Ui_MainWindow, mainWindow):
         self.ui = ui
         self.mainWindow = mainWindow
-        self.oriImage = ''
-        self.dsFolder = ''
-        self.nextDSFolder = ''
-        self.isToAbort = False
-        self.dctPlugins = dict()
+        self.oriImage = '' # 当前子块的原始图片对象
+        self.dsFolder = '' # 当前已经读取了有效数据集的目录
+        self.nextDSFolder = '' # 下次从哪个目录读取数据集
+        self.isToAbort = False  # 在生成子块数据集期间是否要中止
+        self.patchNdx = 0  # 当前已生成的patch的数量
+        self.lstPatches = [] # 记录当前已经生成的patch，每个元素是一个字典
+        self.strOutFolder = '' # 子块数据集的输出目录
+        self.chkTags = []  # 记录动态生成的表示类别名称和实例数量的复选框
+        self.nextDSFolder = 'q:/datasets/wider_face'
+        self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
         # 搜索 xxx_utils.py
         lstTypes = [x[:-3] for x in glob.glob('*_utils.py')]
         for plugin in lstTypes:
@@ -95,11 +100,6 @@ class MainAppLogic():
         # ui.btnValidateMultiFaceDataSet.setEnabled(False)
         # ui.cmbMaxFacesPerCluster.setEnabled(False)
         ui.btnSaveOriBBoxes.clicked.connect(self.OnClicked_SaveOriBBoxes)
-        self.patchNdx = 0
-        self.lstPatches = []
-        self.strOutFolder = ''
-        self.chkTags = []
-        self.nextDSFolder = 'q:/datasets/wider_face'
         #if ui.chkAutoload.isChecked():
         #    self.LoadDataset('q:/datasets/wider_face')
 
