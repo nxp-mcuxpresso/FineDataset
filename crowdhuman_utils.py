@@ -8,7 +8,7 @@ import time
 
 
 class CrowdHumanUtils():
-    def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callBack=None, maxCnt=5000, isShuffle=True):
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callback=None, maxCnt=50000, isShuffle=True):
         self.pathBBox = '%s/annotation_%s.odgt' % (dsFolder, setSel)
         self.dctFiles = {}
         self.setSel = setSel
@@ -65,8 +65,10 @@ class CrowdHumanUtils():
         if maxCnt != 0 and len(self.lstAnnos) > maxCnt:
             self.lstAnnos = self.lstAnnos[:maxCnt]
         imgCnt = min(maxCnt, len(self.lstAnnos))
-
         for i in range(imgCnt):
+            if i % 100 == 0:
+                if callback is not None:
+                    callback(i * 100 / imgCnt)
             dctIn = self.lstAnnos[i]
             lstBBoxes = []
             dctAreas = []
@@ -76,7 +78,6 @@ class CrowdHumanUtils():
                 area = xywh[3] * xywh[2] / 100.0
                 tag = gtIn['tag']
                 self.dctTags[tag] += 1
-                self.setTags.add(gtIn['tag'])
                 dctItem = {
                     'x1' : xywh[0],
                     'y1' : xywh[1],
@@ -88,7 +89,7 @@ class CrowdHumanUtils():
                     'isExaggerate': 0,
                     'isOverIllumination': 0,
                     'occlusion' : 0,
-                    'isAtypicalPose': 0,
+                    'pose': 0,
                     'isInvalid' : 0
                 }
                 # 我们在检测人体，所以滤除过小的
@@ -146,7 +147,7 @@ class CrowdHumanUtils():
         return ret
 
     def GetTagDict(self):
-        return self.dctTags.keys()
+        return self.dctTags
     
     '''
         根据 fileKey反查在 dctFiles中的key

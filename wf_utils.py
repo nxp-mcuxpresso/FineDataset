@@ -71,10 +71,10 @@ class WFUtils():
                         'isExaggerate': lstVals[5],
                         'isOverIllumination': lstVals[6],
                         'occlusion' : lstVals[8],
-                        'isAtypicalPose': lstVals[9],
+                        'pose': lstVals[9],
                         'isInvalid' : lstVals[7],
                     }
-                    if dctItem['isInvalid'] == 0 and dctItem['blur'] < 2 and dctItem['isAtypicalPose'] == 0 and dctItem['occlusion'] < 1:
+                    if dctItem['isInvalid'] == 0 and dctItem['blur'] < 2 and dctItem['pose'] == 0 and dctItem['occlusion'] < 1:
                         if lstVals[2] * lstVals[3] >= 36*36 and lstVals[2] != 0 and lstVals[3] / lstVals[2] < 2.0:
                             lstBBoxes.append(dctItem)
                             self.dctTags['face'] += 1

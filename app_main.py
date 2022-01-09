@@ -59,7 +59,7 @@ class MainAppLogic():
             self.isToAbort = True
         ui.btnAbort.clicked.connect(lambda: _SetAbort(self))
         ui.btnAbort.setEnabled(False)
-        ui.btnForceLoadDS.clicked.connect(lambda: self.LoadDataset(self.nextDSFolder))
+        ui.btnForceLoadDS.clicked.connect(lambda: self.LoadDataset(self.nextDSFolder, True))
         ui.cmbSubSet.textActivated.connect(lambda: self.LoadDataset(self.nextDSFolder))
         #ui.cmbSubSet.highlighted.connect(lambda: LoadDataset(ui)) 
         ui.btnRandom.clicked.connect(self.OnClicked_Random)
@@ -163,9 +163,8 @@ class MainAppLogic():
 
         print("\n你选择的文件夹为:")
         print(dir_choose)
-        self.nextDSFolder = dir_choose
-        if self.ui.chkAutoload.isChecked():
-            self.LoadDataset(dir_choose)
+        self.nextDSFolder = dir_choose        
+        self.LoadDataset(dir_choose)
 
     def GetNextFreeFolder(self, strPrimary, isReplace=True):
         sTry = strPrimary
@@ -367,9 +366,12 @@ class MainAppLogic():
                 outText = ' :'.join(oriText.split(':')[:-1])[:-1]
                 lstTags.append(outText)
         return lstTags
-    def LoadDataset(self, dsFolder):
+        
+    def LoadDataset(self, dsFolder, isForced=False):
         # QMessageBox.information(None,'box',ui.cmbSubSet.currentText())
         # ui.cmbSubSet.currentData
+        if isForced == False and self.ui.chkAutoload.isChecked() == False:
+            return
         def callback(pgs):
             self.ui.pgsBar.setValue(pgs)
             QApplication.processEvents()

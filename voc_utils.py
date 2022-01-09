@@ -72,15 +72,17 @@ class VOCUtils():
                 'h': h,
                 'tag': obj['name'],
                 'blur': 0,
-                'difficult' : int(obj['difficult']),
                 'isOverIllumination': 0,
-                'isAtypicalPose': 1 if obj['pose'] != 'Frontal' else 0,
                 'isInvalid' : 0,
             }
-            if 'truncated' in obj.keys():
-                dctItem['occlusion'] = int(obj['truncated'])
-            else:
-                dctItem['occlusion'] = 0
+
+            for optionalKeys in ['difficult', 'pose', 'truncated']:
+                dctItem[optionalKeys] = 0
+                try:
+                    if optionalKeys in obj.keys():
+                        dctItem[optionalKeys] = int(obj[optionalKeys])
+                except:
+                    pass
             lstXywhs.append(dctItem)
         return lstXywhs
 
@@ -148,7 +150,7 @@ class VOCUtils():
                         if info.name[-3:] == 'jpg':
                             self.tarRoots.append(path.split(info.name)[0])
                             break
-                    infoCnt = len(lstTarInfos)     
+                    infoCnt = len(lstTarInfos) // 2 + 1 # 一半是jpg, 一半是xml
                     for (i,info) in enumerate(lstTarInfos):
                         if info.name[-3:] == 'xml':
                             fd = tar.extractfile(info)
