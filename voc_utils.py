@@ -59,7 +59,12 @@ class VOCUtils():
             hVSw = h / w
             if hVSw < dctNewCfg['minHvsW'] or hVSw > dctNewCfg['maxHvsW']:
                 continue
-            self.setTags.add(obj['name'])
+            tag = obj['name']
+            if tag not in self.dctTags.keys():
+                self.dctTags[tag] = 1
+            else:
+                self.dctTags[tag] += 1
+
             dctItem = {
                 'x1' : x,
                 'y1' : y,
@@ -79,9 +84,9 @@ class VOCUtils():
             lstXywhs.append(dctItem)
         return lstXywhs
 
-    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}):
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}, callback=None):
         self.dsFolder = dsFolder
-        self.setTags = set()
+        self.dctTags = dict()
         self.dctFiles = dict()
         self.setSel = setSel
         self.dctCfg = {}
@@ -99,11 +104,16 @@ class VOCUtils():
         }
         t1 = time.time()
         # 扫描所有数据集
+        pgs = 0
         if path.exists(dsFolder + '/Annotations') and path.exists(dsFolder + '/JPEGImages'):
             self.isTarMode = False
             lstFiles = glob.glob(dsFolder + '/Annotations/*.xml')
             lstFiles = [x.replace('\\', '/') for x in lstFiles]
-            for sFile in lstFiles:
+            cnt = len(lstFiles)
+            for (i, sFile) in enumerate(lstFiles):
+                if i % 100 == 0:
+                    if callback is not None:
+                        callback(i*100/cnt)
                 fd = open(sFile)
                 an = xmltodict.parse(fd.read())['annotation']
                 fd.close()
@@ -130,18 +140,20 @@ class VOCUtils():
             if len(self.lstTars) == 0:
                 return
             try:
+                tarCnt = len(self.lstTars)
                 for (tarNdx, tar) in enumerate(self.lstTars):
                     lstTarInfos = tar.getmembers()
                     #查前缀
                     for info in lstTarInfos:
                         if info.name[-3:] == 'jpg':
                             self.tarRoots.append(path.split(info.name)[0])
-                            break                
-                    for info in lstTarInfos:
+                            break
+                    infoCnt = len(lstTarInfos)     
+                    for (i,info) in enumerate(lstTarInfos):
                         if info.name[-3:] == 'xml':
                             fd = tar.extractfile(info)
                             datBlock = fd.read()
-                            an = xmltodict.parse(datBlock)['annotation']                            
+                            an = xmltodict.parse(datBlock)['annotation']                         
                             #an = Xml2Dict(datBlock)
                             fd.close()
                             if isinstance(an['object'],list) == False:
@@ -154,6 +166,10 @@ class VOCUtils():
                                     'cnt' : len(lstBBoxes),
                                     'xywhs' : lstBBoxes
                                 }
+                            if i % 100 == 0:
+                                pgs = 100 * (tarNdx / tarCnt + i / infoCnt / tarCnt)
+                                if callback is not None:
+                                    callback(pgs)
             except Exception as e:
                 print(e)
                 traceback.print_exc()
@@ -188,8 +204,8 @@ class VOCUtils():
         return ret        
 
     
-    def GetTagSet(self):
-        return self.setTags
+    def GetTagDict(self):
+        return self.dctTags
 
     '''
         根据 fileKey反查在 dctFiles中的key

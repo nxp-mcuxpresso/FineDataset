@@ -8,7 +8,7 @@ import time
 
 
 class CrowdHumanUtils():
-    def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, maxCnt=5000, isShuffle=True):
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callBack=None, maxCnt=5000, isShuffle=True):
         self.pathBBox = '%s/annotation_%s.odgt' % (dsFolder, setSel)
         self.dctFiles = {}
         self.setSel = setSel
@@ -16,7 +16,7 @@ class CrowdHumanUtils():
         self.lstZfs = []
         self.lstFiles = []
         self.lstAnnos = []
-        self.setTags = set()
+        self.dctTags = {'person':0, 'mask':0}
         self._unsureCnt = 0
         self._ignoreCnt = 0
         self._noHeadCnt = 0
@@ -74,6 +74,8 @@ class CrowdHumanUtils():
             for gtIn in dctIn['gtboxes']:
                 xywh = gtIn['vbox'] # fbox会把遮挡的部分也算进去
                 area = xywh[3] * xywh[2] / 100.0
+                tag = gtIn['tag']
+                self.dctTags[tag] += 1
                 self.setTags.add(gtIn['tag'])
                 dctItem = {
                     'x1' : xywh[0],
@@ -143,8 +145,8 @@ class CrowdHumanUtils():
         ret = io.BytesIO(data)
         return ret
 
-    def GetTagSet(self):
-        return self.setTags
+    def GetTagDict(self):
+        return self.dctTags.keys()
     
     '''
         根据 fileKey反查在 dctFiles中的key

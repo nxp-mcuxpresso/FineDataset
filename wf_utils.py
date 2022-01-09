@@ -2,14 +2,14 @@ import os.path as path
 import zipfile
 import io
 class WFUtils():
-    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}):
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}, callback=None):
         self.dsFolder = dsFolder
         self.setSel = setSel
         self.dctCfg = {}
         self.pathBBox = '%s/wider_face_split/wider_face_%s_bbx_gt.txt' % (dsFolder, setSel)
         self.dctFiles = None
         self.zfDataFile = None
-
+        self.dctTags = {'face':0}
         self.isZipMode = False
 
         lstLines = []
@@ -41,9 +41,14 @@ class WFUtils():
         self.dctFiles = {}
         self.dctFileKeyMapper = {}
         print('scaning')
-        for strLine in lstLines:
+        cnt = len(lstLines)
+        for (i, strLine) in enumerate(lstLines):
             strLine = strLine.strip()
             if st == STATE_WANT_FILENAME:
+                if i % 100 == 0:
+                    pgs = 100 * i / cnt
+                    if callback is not None:
+                        callback(pgs)
                 strFileName = '%s/WIDER_%s/images/%s' % (dsFolder, setSel, strLine)
                 fileKey = strLine.split('/')[-1]
                 self.dctFileKeyMapper[fileKey] = strFileName
@@ -72,6 +77,7 @@ class WFUtils():
                     if dctItem['isInvalid'] == 0 and dctItem['blur'] < 2 and dctItem['isAtypicalPose'] == 0 and dctItem['occlusion'] < 1:
                         if lstVals[2] * lstVals[3] >= 36*36 and lstVals[2] != 0 and lstVals[3] / lstVals[2] < 2.0:
                             lstBBoxes.append(dctItem)
+                            self.dctTags['face'] += 1
                     bboxRem -= 1
                     if bboxRem == 0:
                         st = STATE_WANT_FILENAME
@@ -103,8 +109,8 @@ class WFUtils():
         return ret        
 
     
-    def GetTagSet(self):
-        return {'face'}
+    def GetTagDict(self):
+        return self.dctTags
 
     '''
         根据 fileKey反查在 dctFiles中的key

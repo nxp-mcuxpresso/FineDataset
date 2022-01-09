@@ -105,7 +105,6 @@ class Patcher():
                         if isRepeat:
                             continue
                         areaO = dctBbox['w'] * dctBbox['h']
-                        closeRate = areaIJ / areaO
                         # 找到原始框标号的并集
                         set1 = set(multiIn[6])
                         set2 = set(lstIn[j][6])
@@ -113,6 +112,11 @@ class Patcher():
                         lstTmp = list(set3)
                         # 找到物体框的并集
                         lstUn = [item['xywhs'][x] for x in lstTmp]
+                        
+                        areaIJ = 0
+                        for xywh in lstUn:
+                            areaIJ += xywh['w'] * xywh['h']
+                        closeRate = areaIJ / areaO                        
                         isMerged = True
                         lstMulti.append([lstUn, (x1o, y1o), (x2o, y2o), dctBbox, areaIJ, closeRate, lstTmp])
                         if lstIn[j] not in lstConsumed:
@@ -263,7 +267,8 @@ class Patcher():
     CutPatches: 切割出包含一簇人脸的图片
     '''
     def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[1.00, 0.8], outSize = [96, 128], \
-            ndx=-1, strFile='', maxObjPerCluster=10, closeRatio=0.333, lstClusters=[], maxPatchPerImg=5, allowedTags=['*']):
+            ndx=-1, strFile='', maxObjPerCluster=10, minCloseRate=0.333, areaRateRange=[0,1], 
+            maxPatchPerImg=10, allowedTags=['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
         lstRet, img = self.GetClusters(ndx, isShow=False, maxObjPerCluster=maxObjPerCluster, allowedTags=allowedTags)
@@ -284,8 +289,20 @@ class Patcher():
         random.shuffle(lstOriPats)
         # pat打包格式：[[子框],(x1, y1),(x2,y2), bbox, 面积]
         newPatchCnt = 0
+        skipBadAspectCnt = 0
+        skipOutBoundCnt = 0
+        skipBadSizeCnt = 0
+        skipNotCloseCnt = 0
+        skipTooDenseCnt = 0
+        skipTooManyCnt = 0
+        totalCnt = 0
         for (i, pat) in enumerate(lstOriPats):
+            totalCnt += len(pat[0])
             if len(pat[0]) > maxObjPerCluster:
+                skipTooDenseCnt += len(pat[0])
+                continue            
+            if newPatchCnt >= maxPatchPerImg:
+                skipTooManyCnt += len(pat[0])
                 continue
             bbox = pat[3]
             w  = bbox['w']
@@ -293,20 +310,21 @@ class Patcher():
             x1 = bbox['x1']
             y1 = bbox['y1']
             cx = x1 + w // 2
-            cy = y1 + h // 2
-            rand_clip_retry = 30
+            cy = y1 + h // 2            
             scaler = 0.95
-            for retryNdx in range(rand_clip_retry):
-                # w2, h2,cx2, cy2, x12, x22, y12, y22表示输出patch的几何信息
-                aspectErr = w/h / wVsH
-                if aspectErr > 1.5 or aspectErr < 0.667:
-                    continue
+            def _GetXYXY(cx, cy, w, h, scaler, wVsH, isAdaptiveExpand=True):
                 w2 = w / scaler
                 h2 = h / scaler
-                if w2 / h2 < wVsH:
-                    w2 = h2 * wVsH
+                if isAdaptiveExpand == True:
+                    if w2 / h2 < wVsH:
+                        w2 = h2 * wVsH
+                    else:
+                        h2 = w2 / wVsH
                 else:
-                    h2 = w2 / wVsH
+                    if w2 / h2 > wVsH:
+                        w2 = h2 * wVsH
+                    else:
+                        h2 = w2 / wVsH  
                 w2 = int(w2 + 0.5)
                 h2 = int(h2 + 0.5)
                 # 随机水平移动
@@ -318,39 +336,64 @@ class Patcher():
                 cy2 = cy + yOfs
                 # 必须确保长宽比
                 if cx2 - w2 / 2 < 0:
-                    continue
+                    cx2 = w2 / 2
                 if cy2 - h2 / 2 < 0:
-                    continue
+                    cy2 = h2 / 2
                 x12 = int(cx2 - w2 // 2 + 0.5)
                 y12 = int(cy2 - h2 // 2 + 0.5)
                 x22 = int(cx2 + w2 // 2 + 0.5)
                 y22 = int(cy2 + h2 // 2 + 0.5)
+                return x12, y12, x22, y22, w2, h2            
+            aspectErr = w/h / wVsH
+            if aspectErr > 5.0 or aspectErr < 0.2:
+                skipBadAspectCnt += len(pat[0])
+                continue
+
+            rand_clip_retry = 10
+            for retryNdx in range(rand_clip_retry):
+                newSkipBadSizeCnt = 0
+                newSkipOutBoundCnt = 0
+                newSkipNotCloseCnt = 0
+                # w2, h2,cx2, cy2, x12, x22, y12, y22表示输出patch的几何信息
+
+                # 当子块的长宽比不符合输出的长宽比时，先投机地尝试扩大子块范围以符合长宽比要求
+                x12,y12,x22,y22,w2,h2 = _GetXYXY(cx, cy, w, h, scaler, wVsH, True)
                 if x22 >= image.width or y22 >= image.height:
-                    continue
+                    # 若扩大子块后导致它超过原图的边界，则老实地剪切子块中超出的部分
+                    x12,y12,x22,y22,w2,h2 = _GetXYXY(cx, cy, w, h, scaler, wVsH, False)
+                # 上面的操作导致需要重新计算closeRate
 
-                areaO = w2 * h2
-                if pat[4] / areaO < closeRatio:
-                    break
-
-                # patchImg = image[x12:x22, y12:y22]
                 cropped = image.crop((x12, y12, x22, y22))
 
                 sOutFileName = '%s/%s_%05d_%d.png' % ('.' + strOutFolder[6:], sMainName, patchNdx, int(scaler * 100))
                 dct = {'filename' : sOutFileName}
                 lstBBxyxys = []
+                areaIJ = 0
+                areaO = w2 * h2
                 for subBox in pat[0]:
                     # 去除经过剪裁后已经位于外面的物体框
                     ptx1 = subBox['x1'] - x12
                     pty1 = subBox['y1'] - y12
                     ptx2 = ptx1 + subBox['w']
                     pty2 = pty1 + subBox['h']
-                    if ptx1 < 0 or pty1 < 0:
+                    if ptx1 < 0 or pty1 < 0 or ptx2 >= w2 or pty2 >= h2:
+                        newSkipOutBoundCnt += 1 
                         continue
-                    resizeRatio = outSize[0] / w2
+                    areaRate = subBox['w'] * subBox['h'] / w2 / h2
+                    if areaRate < areaRateRange[0] or areaRate > areaRateRange[1]:
+                        newSkipBadSizeCnt += 1
+                        continue
+                    areaIJ += subBox['w'] * subBox['h']
                     [ptx1, ptx2] = [int(x * outSize[0] / w2 + 0.5) for x in [ptx1, ptx2]]
                     [pty1, pty2] = [int(x * outSize[1] / h2 + 0.5) for x in [pty1, pty2]]
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
                     lstBBxyxys.append([ptx1, pty1, ptx2, pty2, subBox['tag']])
+                closeRate = areaIJ / areaO
+                if closeRate < minCloseRate:
+                    newSkipNotCloseCnt = len(pat[0])
+                    continue
+                skipBadSizeCnt += newSkipBadSizeCnt
+                skipOutBoundCnt += newSkipOutBoundCnt
                 if len(lstBBxyxys) > 0:
                     img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
                     img = cv2.resize(img,(outSize[0], outSize[1]), interpolation=cv2.INTER_LINEAR)                    
@@ -360,15 +403,23 @@ class Patcher():
                     newPatchCnt += 1
                     lstPatches.append(dct)
                 break
-            if newPatchCnt >= maxPatchPerImg:
-                break
+            skipNotCloseCnt += newSkipNotCloseCnt
+
+        if isinstance(dbgSkips, list) and len(dbgSkips) >= 6:
+            dbgSkips[0] += totalCnt
+            dbgSkips[1] += skipBadAspectCnt
+            dbgSkips[2] += skipNotCloseCnt
+            dbgSkips[3] += skipOutBoundCnt
+            dbgSkips[4] += skipBadSizeCnt
+            dbgSkips[5] += skipTooDenseCnt
+            dbgSkips[6] += skipTooManyCnt
         return patchNdx, lstPatches
 
     '''
     CutPatches: 切割出只包含一个人脸GT框的图片
     '''
-    def CutPatches(self, strOutFolder, patchNdx, scalers=[0.8, 0.6, 0.45], outSize = [96,128], ndx=-1, strFile='', \
-        maxPatchPerImg=32, allowedTags = ['*']):
+    def CutPatches(self, strOutFolder, patchNdx, scalers=[0.8, 0.6, 0.45], areaRateRange=[0, 1], outSize = [96,128], ndx=-1, strFile='', \
+        maxPatchPerImg=32, allowedTags = ['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
         item = self.dctFiles[strFile]
@@ -380,9 +431,12 @@ class Patcher():
         
         wVsH = outSize[0] / outSize[1]
         lstXYWH = item['xywhs'].copy()
+        skipOutBoundCnt = 0
+        skipBadSizeCnt = 0
         if len(lstXYWH) > maxPatchPerImg:
             random.shuffle(lstXYWH)
             lstXYWH = lstXYWH[:maxPatchPerImg]
+        totalCnt = 0
         for bbox in lstXYWH:
             if not bbox['tag'] in allowedTags:
                 if '*' != allowedTags[0]:
@@ -396,8 +450,11 @@ class Patcher():
             cy = y1 + h // 2
             for scaler in scalers:
                 # 为每一个放大尺度都做一个patch，并且添加随机移动效果
+                totalCnt += 1
                 rand_clip_retry = 30
                 for retryNdx in range(rand_clip_retry):
+                    newSkipOutBoundCnt = 0
+                    newSkipBadSizeCnt = 0
                     # w2, h2,cx2, cy2, x12, x22, y12, y22表示输出patch的几何信息
                     w2 = w / scaler
                     h2 = h / scaler
@@ -416,14 +473,15 @@ class Patcher():
                     cy2 = cy + yOfs
                     # 必须确保长宽比
                     if cx2 - w2 / 2 < 0:
-                        continue
+                        cx2 = w / 2
                     if cy2 - h2 / 2 < 0:
-                        continue
+                        cy2 = h / 2
                     x12 = int(cx2 - w2 // 2 + 0.5)
                     y12 = int(cy2 - h2 // 2 + 0.5)
                     x22 = int(cx2 + w2 // 2 + 0.5)
                     y22 = int(cy2 + h2 // 2 + 0.5)
                     if x22 >= image.width or y22 >= image.height:
+                        newSkipOutBoundCnt += 1
                         continue
                     # patchImg = image[x12:x22, y12:y22]
                     cropped = image.crop((x12, y12, x22, y22))
@@ -433,7 +491,12 @@ class Patcher():
                     pty1 = y1 - y12
                     ptx2 = ptx1 + w
                     pty2 = pty1 + h
-                    if ptx1 < 0 or pty1 < 0:
+                    if ptx1 < 0 or pty1 < 0 or ptx2 >= w2 or pty2 >= h2:
+                        newSkipOutBoundCnt += 1
+                        continue
+                    areaRate = w * h / w2 / h2
+                    if areaRate < areaRateRange[0] or areaRate > areaRateRange[1]:
+                        newSkipBadSizeCnt += 1
                         continue
                     img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
                     
@@ -452,6 +515,12 @@ class Patcher():
                     lstPatches.append(dct)
                     patchNdx += 1
                     break
+                skipOutBoundCnt += newSkipOutBoundCnt
+                skipBadSizeCnt += newSkipBadSizeCnt
+        if isinstance(dbgSkips, list) and len(dbgSkips) >= 6:
+            dbgSkips[0] += totalCnt
+            dbgSkips[3] += skipOutBoundCnt
+            dbgSkips[4] += skipBadSizeCnt
         return patchNdx, lstPatches
 
     def ShowImageFile(self, fileKey, isShow, allowedTags = ['*']):
@@ -491,7 +560,7 @@ class Patcher():
         cnt = len(lst)
         ndx = np.random.randint(cnt)
         item = lst[ndx]
-        strFile = item['filename']
+        strFile = './outs/' + item['filename'][2:]
         image = Image.open(strFile)
         img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
         for bbox in item['xyxys']:
