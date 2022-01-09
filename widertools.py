@@ -296,7 +296,7 @@ class Ui_MainWindow(object):
         self.txtOutX.setText(_translate("MainWindow", "96"))
         self.txtOutY.setText(_translate("MainWindow", "128"))
         self.label_10.setText(_translate("MainWindow", "单物体面积最小和最大占比"))
-        self.label_6.setText(_translate("MainWindow", "物体区域最大占比"))
+        self.label_6.setText(_translate("MainWindow", "物体区域最小占比"))
         self.groupBox_2.setTitle(_translate("MainWindow", "源数据集选择"))
         self.label.setText(_translate("MainWindow", "子集"))
         self.btnDSFolder.setText(_translate("MainWindow", "目录..."))

@@ -17,6 +17,7 @@ import crowdhuman_utils as ch_utils
 import voc_utils
 from patcher import DelTree
 import patcher
+import glob
 class MainAppLogic():
     def __init__(self, ui:widertools.Ui_MainWindow, mainWindow):
         self.ui = ui
@@ -25,7 +26,15 @@ class MainAppLogic():
         self.dsFolder = ''
         self.nextDSFolder = ''
         self.isToAbort = False
-        ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
+        self.dctPlugins = dict()
+        # 搜索 xxx_utils.py
+        lstTypes = [x[:-3] for x in glob.glob('*_utils.py')]
+        for plugin in lstTypes:
+            a = __import__(plugin)
+            ui.cmbDSType.addItem(a.GetDSTypeName())
+            self.dctPlugins[a.GetDSTypeName()] = a.GetUtilClass()
+
+        # ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
         ui.cmbDSType.setCurrentIndex(0)
         ui.cmbSubSet.addItems(['train','val', 'any'])
         ui.cmbMaxFacesPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
@@ -410,12 +419,16 @@ class MainAppLogic():
         QApplication.processEvents()
         try:
             setSel = self.ui.cmbSubSet.currentText()
-            if dsType == 'wider_face':
-                provider = wf_utils.WFUtils(dsFolder, setSel, dctCfg, callback)
-            elif dsType == 'crowd_human':
-                provider = ch_utils.CrowdHumanUtils(dsFolder, setSel, dctCfg, callback)
-            elif dsType == 'voc':
-                provider = voc_utils.VOCUtils(dsFolder, setSel, dctCfg, callback)
+            provider = self.dctPlugins[dsType](dsFolder, setSel, dctCfg, callback)
+            if False:
+                if dsType == 'wider_face':
+                    provider = wf_utils.WFUtils(dsFolder, setSel, dctCfg, callback)
+                elif dsType == 'crowd_human':
+                    provider = ch_utils.CrowdHumanUtils(dsFolder, setSel, dctCfg, callback)
+                elif dsType == 'voc':
+                    provider = voc_utils.VOCUtils(dsFolder, setSel, dctCfg, callback)
+                elif dsType == 'coco':
+                    pass
         except Exception as e:
             print(e)
             self.ui.statusBar.showMessage('代码错误：\n' + str(e))

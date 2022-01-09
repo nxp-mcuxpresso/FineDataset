@@ -1,6 +1,12 @@
 import os.path as path
 import zipfile
 import io
+
+def GetDSTypeName():
+    return "Wider Face"
+
+def GetUtilClass():
+    return WFUtils
 class WFUtils():
     def __init__(self, dsFolder = '.', setSel='train', dctCfg={}, callback=None):
         self.dsFolder = dsFolder

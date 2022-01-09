@@ -265,7 +265,7 @@
       </font>
      </property>
      <property name="text">
-      <string>物体区域最大占比</string>
+      <string>物体区域最小占比</string>
      </property>
     </widget>
    </widget>

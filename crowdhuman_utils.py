@@ -6,7 +6,10 @@ import io
 import random
 import time
 
-
+def GetUtilClass():
+    return CrowdHumanUtils
+def GetDSTypeName():
+    return "Crowd Human"
 class CrowdHumanUtils():
     def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callback=None, maxCnt=50000, isShuffle=True):
         self.pathBBox = '%s/annotation_%s.odgt' % (dsFolder, setSel)

@@ -7,6 +7,13 @@ import xmltodict
 import xml.dom.minidom
 import traceback
 import time
+
+def GetDSTypeName():
+    return "VOC"
+
+def GetUtilClass():
+    return VOCUtils
+
 def ParseNode(node):
     if node.firstChild == node.lastChild:
         return node.firstChild.nodeValue
@@ -75,12 +82,12 @@ class VOCUtils():
                 'isOverIllumination': 0,
                 'isInvalid' : 0,
             }
-
-            for optionalKeys in ['difficult', 'pose', 'truncated']:
-                dctItem[optionalKeys] = 0
+            optionalKeyMap = ['difficult', 'pose', 'occlusion']
+            for (i, optionalKey) in enumerate(['difficult', 'pose', 'truncated']):
+                dctItem[optionalKeyMap[i]] = 0
                 try:
-                    if optionalKeys in obj.keys():
-                        dctItem[optionalKeys] = int(obj[optionalKeys])
+                    if optionalKey in obj.keys():
+                        dctItem[optionalKeyMap[i]] = int(obj[optionalKey])
                 except:
                     pass
             lstXywhs.append(dctItem)
