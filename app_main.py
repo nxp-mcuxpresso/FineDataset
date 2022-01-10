@@ -36,8 +36,14 @@ class MainAppLogic():
         lstTypes = [x[:-3] for x in glob.glob('*_utils.py')]
         for plugin in lstTypes:
             a = __import__(plugin)
-            ui.cmbDSType.addItem(a.GetDSTypeName())
-            self.dctPlugins[a.GetDSTypeName()] = a.GetUtilClass()
+            dsType = a.GetDSTypeName()
+            dsCls = a.GetUtilClass()
+            if not isinstance(dsType, list):
+                dsType = [dsType]
+                dsCls = [dsCls]
+            for (i,ds) in enumerate(dsType):
+                ui.cmbDSType.addItem(ds)
+                self.dctPlugins[ds] = dsCls[i]
 
         # ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
         ui.cmbDSType.setCurrentIndex(0)
@@ -381,8 +387,10 @@ class MainAppLogic():
         # ui.cmbSubSet.currentData
         if isForced == False and self.ui.chkAutoload.isChecked() == False:
             return
-        def callback(pgs):
+        def callback(pgs, msg=''):
             self.ui.pgsBar.setValue(pgs)
+            if len(msg) > 0:
+                self.ui.statusBar.showMessage(msg)
             QApplication.processEvents()
         
         self.ui.pgsBar.setValue(1)
