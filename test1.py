@@ -27,7 +27,7 @@ class VOCUtils():
                 'difficult' : int(obj['difficult']),
                 'isOverIllumination': 0,
                 'occlusion' : int(obj['truncated']),
-                'isAtypicalPose': 1 if obj['pose'] != 'Frontal' else 0,
+                'pose': 1 if obj['pose'] != 'Frontal' else 0,
                 'isInvalid' : 0,
             }
             lstXywhs.append(dctItem)

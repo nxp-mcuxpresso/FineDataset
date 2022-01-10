@@ -30,7 +30,7 @@ class MainAppLogic():
         self.lstPatches = [] # 记录当前已经生成的patch，每个元素是一个字典
         self.strOutFolder = '' # 子块数据集的输出目录
         self.chkTags = []  # 记录动态生成的表示类别名称和实例数量的复选框
-        self.nextDSFolder = 'q:/datasets/wider_face'
+        self.nextDSFolder = 'q:/datasets/COCO_2017'
         self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
         # 搜索 xxx_utils.py
         lstTypes = [x[:-3] for x in glob.glob('*_utils.py')]
@@ -269,7 +269,11 @@ class MainAppLogic():
             self.ui.pgsBar.setValue(pgs)
             QApplication.processEvents()
             print('%d/%d completed' % (self.patchNdx, dsSize))
-
+        if hasattr(self.provider, 'TranslateTag'):
+            for item in self.lstPatches:
+                for xyxy in item['xyxys']:
+                    for i in range(4, len(xyxy)):
+                        xyxy[i] = self.provider.TranslateTag(xyxy[i])
         with open('%s/bboxes.json' % strOutFolder, 'w', encoding='utf-8') as fd:
             json.dump(self.lstPatches, fd, indent=4)
         self.ui.pgsBar.setValue(100)
@@ -458,16 +462,20 @@ class MainAppLogic():
             self.chkTags = []
             topFiller = QWidget()
             dctTag = self.provider.GetTagDict()
+            maxLineLen = 0
             for (i, tag) in enumerate(list(dctTag.keys())):
                 chk = QCheckBox(topFiller)
                 chk.setText(tag + ' : %d' % (dctTag[tag]))
+                lineLen = len(chk.text())
+                if lineLen > maxLineLen:
+                    maxLineLen = lineLen
                 chk.setChecked(True)
                 chk.isChecked()                
                 self.chkTags.append([chk, chk.text()])
                 self.chkTags.sort(key=lambda x:x[1], reverse=False)
             for (i, item) in enumerate(self.chkTags):
                 item[0].move(4, 5 + i * 20)
-            topFiller.setMinimumSize(100, len(self.chkTags) * 20)
+            topFiller.setMinimumSize(8*maxLineLen, len(self.chkTags) * 20)
             mainUI.scrollTags.setWidget(topFiller)
         self.ui.pgsBar.setValue(100)
         self.ui.tmrToHidePgsBar.start()

@@ -28,7 +28,7 @@ class InternalCOCOUtils():
         self.lstZfs = []
         self.lstFiles = []
         self.lstAnns = []
-        
+        self.dctTagToWholeTag = dict()
         self.dctTags = dict()
 
         minHvsW, maxHvsW = 1.0/6.0, 6.0
@@ -50,8 +50,8 @@ class InternalCOCOUtils():
             lstSetSel = [setSel]
         setFiles = set()
         print('扫描zip数据集的索引')
-        for setSel in lstSetSel:
-            globKey = '%s/*%s*.zip' % (dsFolder, setSel)
+        for curSet in lstSetSel:
+            globKey = '%s/*%s*.zip' % (dsFolder, curSet)
             globRet = set(glob.glob(globKey))
             setFiles = setFiles.union(globRet)
         lstFiles = list(setFiles)
@@ -60,7 +60,7 @@ class InternalCOCOUtils():
             raise ValueError('%s目录里未找到符合条件%s的COCO zip包！' % (dsFolder, setSel))
         # 查找训练文件
         dctFileMap = dict()
-        
+        datFileCnt = 0
         for sFile in lstFiles:
             if sFile.lower().find('annotations_') >= 0:
                 zf = zipfile.ZipFile(sFile)
@@ -76,20 +76,25 @@ class InternalCOCOUtils():
                             if setSel == 'any' or datFileMainName.lower().find(setSel) >= 0:
                                 isZFUsed = True
                                 datFilePath = '%s/%s.zip' % (dsFolder, datFileMainName)
-                                dctFileMap[datFilePath] = {'zipfile':sFile, 'annotationfile':fileName, 'zfobj':zf}
+                                dctFileMap[datFilePath] = {'annZipContainer':sFile, 'annFile':fileName, 'zfAnn':zf}
+                                datZF = zipfile.ZipFile(datFilePath)
+                                dctFileMap[datFilePath]['imgRoot'] = datZF.filelist[0].filename
+                                dctFileMap[datFilePath]['zfDat'] = datZF
+                                datFileCnt += 1
                 if isZFUsed == False:
                     zf.close()
 
         print('分析COCO标注:')
-        dctTagIDs = dict() 
+        dctTagIDs = dict()
+        dctWholeTagIDs = dict()
         dctImgIDs = dict()
         
         for (zfNdx, x) in enumerate(dctFileMap.keys()) : 
             dctX = dctFileMap[x]
-            self.lstZfs.append(dctX['zfobj'])
-            default_callback(1, x + ', 分析json标注, 请耐心等待...', callback)
+            self.lstZfs.append(dctX)
+            default_callback(100*zfNdx / datFileCnt + 1, x + ', 分析json标注, 请耐心等待...', callback)
 
-            jsonFile = dctX['zfobj'].open(dctX['annotationfile'])
+            jsonFile = dctX['zfAnn'].open(dctX['annFile'])
             jsonData = json.load(jsonFile)
             jsonFile.close()
             lstAnn = jsonData['annotations']
@@ -97,19 +102,26 @@ class InternalCOCOUtils():
             lstCls = jsonData['categories']
             # COCO标注中，list序号和对象id并不对应，需要做成dict以快速搜索
             for (i, dct) in enumerate(lstCls):
-                dctTagIDs[dct['id']] = dct['supercategory'] if isFineCls == False else \
+                # coco分大类和小类
+                dctWholeTagIDs[dct['id']] = dct['supercategory'] if isFineCls == False else \
                     dct['supercategory'] + '/' + dct['name']
+                dctTagIDs[dct['id']] = dct['supercategory'] if isFineCls == False else \
+                    dct['name']
+                key1 = dctTagIDs[dct['id']]
+                self.dctTagToWholeTag[key1] = dctWholeTagIDs[dct['id']]
 
             for (i, dct) in enumerate(lstImg):
                 dctImgIDs[dct['id']] = {'id':dct['id'],'file_name':dct['file_name'], 
                 'w': dct['width'], 'h':dct['height']}
-                if i % 500 == 0:
-                    default_callback(i*20/len(lstImg),'扫描image id',callback)
+                if i % 1000 == 0:
+                    default_callback(i*10/len(lstImg)/datFileCnt + 100 * zfNdx / datFileCnt,
+                    '扫描image id',callback)
             
 
             for (i, dct) in enumerate(lstAnn):
-                if i % 500 == 0:
-                    default_callback(20 + i*80/len(lstAnn),'扫描bbox',callback)
+                if i % 1000 == 0:
+                    default_callback((10 + i*90/len(lstAnn))/datFileCnt + 100 * zfNdx / datFileCnt
+                    ,'扫描bbox',callback)
                 try:
                     imgInfo = dctImgIDs[dct['image_id']]
                 except:
@@ -120,6 +132,8 @@ class InternalCOCOUtils():
                 y1 =  int(bbox_in[1] + 0.5)
                 w = int(bbox_in[2] + 0.5)                
                 h = int(bbox_in[3] + 0.5)
+                if w < 8 or h < 8:
+                    continue
                 aspect = h / w
                 if aspect < minHvsW or aspect > maxHvsW:
                     continue               
@@ -129,7 +143,7 @@ class InternalCOCOUtils():
                     'w': w,
                     'h': h,
                     'area': w*h,
-                    'tag': dctTagIDs[dct['category_id']],
+                    'tag': dctWholeTagIDs[dct['category_id']],
                     'blur': 0,
                     'isExaggerate': 0,
                     'isOverIllumination': 0,
@@ -144,6 +158,7 @@ class InternalCOCOUtils():
                     pass
                 
                 tag = dctItem['tag']
+
                 try:
                     self.dctTags[tag] += 1
                 except:
@@ -165,8 +180,10 @@ class InternalCOCOUtils():
         bkpt = 0
         
     def MapFile(self, strFile:str):
-        zf = self.dctFile2Zf[strFile]
-        fd = zf.open(strFile)
+        dct = self.lstZfs[int(strFile[:2])]
+        zf = dct['zfDat']
+        imgKey = dct['imgRoot'] + strFile[3:]
+        fd = zf.open(imgKey)
         data = fd.read()
         fd.close()
         ret = io.BytesIO(data)
@@ -179,11 +196,10 @@ class InternalCOCOUtils():
         根据 fileKey反查在 dctFiles中的key
     '''
     def MapFileKey(self, fileKey):
-        mapped = 'Images/' + fileKey
         exts = ['.jpg', '.jpeg']
         for ext in exts:
-            if mapped + ext in self.dctFiles.keys():
-                return mapped + ext
+            if fileKey + ext in self.dctFiles.keys():
+                return fileKey + ext
         return ''
 
 class COCOCoarseUtils(InternalCOCOUtils):
@@ -193,9 +209,11 @@ class COCOCoarseUtils(InternalCOCOUtils):
 class COCOFineUtils(InternalCOCOUtils):
     def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callback=None, maxCnt=50000, isShuffle=True):
         super(COCOFineUtils, self).__init__(dsFolder, setSel, dctCfg, callback, maxCnt, isShuffle, True)
-
+    def TranslateTag(self, tagIn):
+        ret = tagIn.split('/')[1]
+        return ret
 
 if __name__ == '__main__':
-    coco = InternalCOCOUtils('q:/datasets/COCO_2017', 'val')
+    coco = COCOFineUtils('q:/datasets/COCO_2017', 'val')
     print('Not meant to run as main! done!')
 
