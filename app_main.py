@@ -31,7 +31,7 @@ class MainAppLogic():
         self.strOutFolder = '' # 子块数据集的输出目录
         self.chkTags = []  # 记录动态生成的表示类别名称和实例数量的复选框
         self.nextDSFolder = 'q:/datasets/wider_face'
-        self.rndNdx = -1
+        self.rndNdx = 2305
         self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
         # 搜索 xxx_utils.py
         lstTypes = [x[:-3] for x in glob.glob('*_utils.py')]
@@ -226,14 +226,17 @@ class MainAppLogic():
         
         lstRets[0] = totalCnt
         useRate = 1
-        for i in range(1, 7):
-            lstRets[i+1] = dbgSkips[i] / totalCnt
-            useRate -= lstRets[i+1]
-        lstRets[1] = useRate
-        strOut = lstReasons[0] + ' : ' + str(lstRets[0])
-        for i in range(1, 8):
-            strOut += '\n' + lstReasons[i] + ' : ' + '%02.1f%%' % (lstRets[i]*100)
-        QMessageBox.information(MainWindow, '生成结果统计', strOut)
+        if totalCnt != 0:
+            for i in range(1, 7):
+                lstRets[i+1] = dbgSkips[i] / totalCnt
+                useRate -= lstRets[i+1]
+            lstRets[1] = useRate
+            strOut = lstReasons[0] + ' : ' + str(lstRets[0])
+            for i in range(1, 8):
+                strOut += '\n' + lstReasons[i] + ' : ' + '%02.1f%%' % (lstRets[i]*100)
+            QMessageBox.information(MainWindow, '生成结果统计', strOut)
+        else:
+            QMessageBox.information(MainWindow, '生成结果统计', '没有生成任何数据')            
 
     def OnClicked_GenMultiFaceDataset(self, ndcIn=[]):
         if len(ndcIn) == 0:
