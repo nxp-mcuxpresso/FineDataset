@@ -24,7 +24,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>20</y>
+      <y>0</y>
       <width>991</width>
       <height>841</height>
      </rect>
@@ -51,7 +51,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>160</y>
+      <y>140</y>
       <width>351</width>
       <height>141</height>
      </rect>
@@ -100,10 +100,10 @@
     <widget class="QLabel" name="label_5">
      <property name="geometry">
       <rect>
-       <x>240</x>
+       <x>180</x>
        <y>100</y>
-       <width>41</width>
-       <height>16</height>
+       <width>71</width>
+       <height>20</height>
       </rect>
      </property>
      <property name="font">
@@ -112,7 +112,7 @@
       </font>
      </property>
      <property name="text">
-      <string>数量</string>
+      <string>子块数量</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="txtDatasetSize">
@@ -138,7 +138,7 @@
       <rect>
        <x>10</x>
        <y>100</y>
-       <width>81</width>
+       <width>41</width>
        <height>16</height>
       </rect>
      </property>
@@ -148,13 +148,13 @@
       </font>
      </property>
      <property name="text">
-      <string>子块 高和宽</string>
+      <string>子块</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="txtOutX">
      <property name="geometry">
       <rect>
-       <x>160</x>
+       <x>120</x>
        <y>100</y>
        <width>41</width>
        <height>20</height>
@@ -172,7 +172,7 @@
     <widget class="QLineEdit" name="txtOutY">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>60</x>
        <y>100</y>
        <width>41</width>
        <height>20</height>
@@ -268,6 +268,42 @@
       <string>物体区域最小占比</string>
      </property>
     </widget>
+    <widget class="QLabel" name="label_11">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>100</y>
+       <width>21</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>H</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_12">
+     <property name="geometry">
+      <rect>
+       <x>110</x>
+       <y>100</y>
+       <width>16</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>W</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QProgressBar" name="pgsBar">
     <property name="geometry">
@@ -291,7 +327,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>20</y>
+      <y>0</y>
       <width>351</width>
       <height>131</height>
      </rect>
@@ -531,7 +567,7 @@
     <property name="geometry">
      <rect>
       <x>1180</x>
-      <y>320</y>
+      <y>300</y>
       <width>181</width>
       <height>61</height>
      </rect>
@@ -603,7 +639,7 @@
     <property name="geometry">
      <rect>
       <x>1180</x>
-      <y>390</y>
+      <y>370</y>
       <width>181</width>
       <height>61</height>
      </rect>
@@ -675,7 +711,7 @@
     <property name="geometry">
      <rect>
       <x>1260</x>
-      <y>490</y>
+      <y>470</y>
       <width>91</width>
       <height>31</height>
      </rect>
@@ -693,7 +729,7 @@
     <property name="geometry">
      <rect>
       <x>1100</x>
-      <y>490</y>
+      <y>470</y>
       <width>71</width>
       <height>31</height>
      </rect>
@@ -711,7 +747,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>310</y>
+      <y>290</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -729,7 +765,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>490</y>
+      <y>470</y>
       <width>71</width>
       <height>31</height>
      </rect>
@@ -747,7 +783,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>330</y>
+      <y>310</y>
       <width>161</width>
       <height>151</height>
      </rect>
@@ -772,10 +808,74 @@
      </property>
     </widget>
    </widget>
+   <widget class="QPushButton" name="btnDelNonCheckedTags">
+    <property name="geometry">
+     <rect>
+      <x>1010</x>
+      <y>510</y>
+      <width>161</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>删除未选中的类别</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1366</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>文件</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>调试</string>
+    </property>
+    <addaction name="menuDbgGenMultiForCurrent"/>
+    <addaction name="menuSpecifyImageNdx"/>
+   </widget>
+   <widget class="QMenu" name="menu_3">
+    <property name="title">
+     <string>工具</string>
+    </property>
+    <addaction name="menuDelNonCheckedTags"/>
+   </widget>
+   <addaction name="menu"/>
+   <addaction name="menu_2"/>
+   <addaction name="menu_3"/>
   </widget>
   <action name="actiontrain">
    <property name="text">
     <string>train</string>
+   </property>
+  </action>
+  <action name="menuDbgGenMultiForCurrent">
+   <property name="text">
+    <string>Generate Multi-patch dataset for current image</string>
+   </property>
+  </action>
+  <action name="menuSpecifyImageNdx">
+   <property name="text">
+    <string>Specify image number</string>
+   </property>
+  </action>
+  <action name="menuDelNonCheckedTags">
+   <property name="text">
+    <string>Delete non-checked categories</string>
    </property>
   </action>
  </widget>

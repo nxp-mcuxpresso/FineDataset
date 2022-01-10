@@ -22,3 +22,4 @@ while True:
             lstTSs[i] = t
             sCmd = 'pyuic5 -o %s %s' % (lstUIs[i][:-2] + 'py', lstUIs[i])
             os.system(sCmd)
+            print(sCmd)

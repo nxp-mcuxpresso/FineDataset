@@ -1,62 +1,45 @@
 import os.path as path
 import zipfile
 import io
-
+import abstract_utils
+import glob
 def GetDSTypeName():
     return "Wider Face"
 
 def GetUtilClass():
     return WFUtils
-class WFUtils():
-    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}, callback=None):
-        self.dsFolder = dsFolder
-        self.setSel = setSel
-        self.dctCfg = {}
-        self.pathBBox = '%s/wider_face_split/wider_face_%s_bbx_gt.txt' % (dsFolder, setSel)
-        self.dctFiles = None
-        self.zfDataFile = None
-        self.dctTags = {'face':0}
-        self.isZipMode = False
+class WFUtils(abstract_utils.AbstractUtils):
 
-        lstLines = []
-        if setSel == 'any':
-            lstSetSel = ['train', 'val', 'test']
-        else:
-            lstSetSel = [setSel]
-        for setSel in lstSetSel:
-            if path.exists(self.pathBBox):
-                fd = open(self.pathBBox)
-                lstLines = fd.readlines()
-                fd.close()
-            else:
-                self.zipAnnoPath = '%s/wider_face_split.zip' % (dsFolder)
-                zf = zipfile.ZipFile(self.zipAnnoPath)
-                fd = zf.open('wider_face_split/wider_face_train_bbx_gt.txt')
-                lstLines = fd.readlines()
-                fd.close() 
-                lstLines = [str(x, encoding='utf-8')[:-1] for x in lstLines]
-            if len(lstLines) > 0:
-                break
-
+    def _Init_ProcAnno(self, preNdx, isZip, lstLines, dsFolder, setSel,  dctCfg:dict, callback):
         STATE_WANT_FILENAME = 0
         STATE_WANT_BBOX_CNT = 1
         STATE_WANT_BBOX_ITEM = 2
         st = STATE_WANT_FILENAME
         bboxRem = 0
         lstBBoxes = []
-        self.dctFiles = {}
-        self.dctFileKeyMapper = {}
+        minHvsW, maxHvsW = 0.1, 10.0
+        try:
+            minHvsW = dctCfg['minHvsW']
+            maxHvsW = dctCfg['maxHvsW']
+        except:
+            pass
+        def default_callback(pgs, msg, in_callback):
+            print(pgs, msg)
+            if in_callback is not None:
+                in_callback(pgs, msg)
         print('scaning')
         cnt = len(lstLines)
         for (i, strLine) in enumerate(lstLines):
             strLine = strLine.strip()
             if st == STATE_WANT_FILENAME:
-                if i % 100 == 0:
+                if i % 500 == 0:
                     pgs = 100 * i / cnt
-                    if callback is not None:
-                        callback(pgs)
-                strFileName = '%s/WIDER_%s/images/%s' % (dsFolder, setSel, strLine)
-                fileKey = strLine.split('/')[-1]
+                    default_callback(pgs, '扫描%s' % (setSel), callback)
+                
+                strFileName = 'WIDER_%s/images/%s' % (setSel, strLine)
+                if isZip == False:
+                    strFileName = dsFolder + '/' + strFileName
+                fileKey = '{:02}_'.format(preNdx) + strLine.split('/')[-1]
                 self.dctFileKeyMapper[fileKey] = strFileName
                 st = STATE_WANT_BBOX_CNT
             elif st == STATE_WANT_BBOX_CNT:
@@ -80,10 +63,13 @@ class WFUtils():
                         'pose': lstVals[9],
                         'isInvalid' : lstVals[7],
                     }
+
                     if dctItem['isInvalid'] == 0 and dctItem['blur'] < 2 and dctItem['pose'] == 0 and dctItem['occlusion'] < 1:
-                        if lstVals[2] * lstVals[3] >= 36*36 and lstVals[2] != 0 and lstVals[3] / lstVals[2] < 2.0:
-                            lstBBoxes.append(dctItem)
-                            self.dctTags['face'] += 1
+                        if lstVals[2] * lstVals[3] >= 36*36 and lstVals[2] != 0:
+                            hVsW = lstVals[3] / lstVals[2]
+                            if hVsW >= minHvsW and hVsW <= maxHvsW:
+                                lstBBoxes.append(dctItem)
+                                self.dctTags['face'] += 1
                     bboxRem -= 1
                     if bboxRem == 0:
                         st = STATE_WANT_FILENAME
@@ -95,6 +81,55 @@ class WFUtils():
                             }
                 else:
                     st = STATE_WANT_FILENAME
+        bkpt = 0
+    
+    def __init__(self, dsFolder = '.', setSel='train', dctCfg={}, callback=None):
+        super(WFUtils,self).__init__(dsFolder, setSel, dctCfg, callback)
+        self.dsFolder = dsFolder
+        self.setSel = setSel
+        self.dsFolerLen = len(dsFolder)
+        self.dctCfg = dict()
+        self.dctFiles = dict()
+        self.dctFileKeyMapper = {}        
+
+        # 数据源列表，指出目录或者压缩文件
+        self.lstSrcs = list()
+
+        self.zfDataFile = None
+        self.dctTags = {'face':0}
+        self.isZipMode = False
+
+        lstLines = []
+        if setSel == 'any':
+            lstSetSel = ['train', 'val']
+        else:
+            lstSetSel = [setSel]
+        for (i, curSet) in enumerate(lstSetSel):
+            pathBBox = '%s/wider_face_split/wider_face_%s_bbx_gt.txt' % (dsFolder, curSet)
+            if path.exists(pathBBox):
+                fd = open(pathBBox)
+                lstLines = fd.readlines()
+                fd.close()
+                self._Init_ProcAnno(i, False, lstLines, dsFolder, curSet, dctCfg, callback)
+                self.lstSrcs.append('%s/WIDER_%s' % (dsFolder, curSet))
+            else:
+                # zip 模式
+                zipAnnoPath = '%s/wider_face_split.zip' % (dsFolder)
+                zfAn = zipfile.ZipFile(zipAnnoPath)
+                fd = zfAn.open('wider_face_split/wider_face_%s_bbx_gt.txt' % (curSet))
+                lstLines = fd.readlines()
+                fd.close() 
+                
+                datFilePath = glob.glob('%s/WIDER_%s*.zip' % (dsFolder, curSet))
+                if len(datFilePath) == 0:
+                    continue
+                datFilePath = datFilePath[0]
+                zfImg = zipfile.ZipFile(datFilePath)
+                self.lstSrcs.append(zfImg)
+                lstLines = [str(x, encoding='utf-8')[:-1] for x in lstLines]
+
+            self._Init_ProcAnno(i, True, lstLines, dsFolder, curSet, dctCfg, callback)
+
         k2 = sorted(self.dctFiles.keys())
 
         dctRet = {}
@@ -102,19 +137,22 @@ class WFUtils():
             dctRet[k] = self.dctFiles[k]
         self.dctFiles = dctRet
     
-    def MapFile(self, strFile:str):
-        sFilePath = self.dctFileKeyMapper[strFile]
-        if path.exists(sFilePath):
-            return sFilePath
-        if self.zfDataFile is not None:
-            self.zfDataFile = zipfile('%s/WIDER_%s.zip' % (self.dsFolder, self.setSel))
-        fd = self.zfDataFile.open(strFile)
-        data = fd.read()
-        fd.close()
-        ret = io.BytesIO(data)
-        return ret        
+    def MapFile(self, strFileKey:str):
 
-    
+        srcNdx = int(strFileKey[:2])
+        sFilePath = self.dctFileKeyMapper[strFileKey]
+        if isinstance(self.lstSrcs[0], str):
+            sFilePath = '%s/' % (self.dsFolder) + self.dctFileKeyMapper[strFileKey]
+            if path.exists(sFilePath):
+                return sFilePath
+        else:
+            zf = self.lstSrcs[srcNdx]
+            fd = zf.open(sFilePath)
+            data = fd.read()
+            fd.close()
+            ret = io.BytesIO(data)
+            return ret    
+
     def GetTagDict(self):
         return self.dctTags
 
@@ -132,7 +170,7 @@ class WFUtils():
 
 if __name__ == '__main__':
     import patcher
-    obj = patcher.Patcher(WFUtils(dsFolder = 'q:/datasets/wider_face/',setSel='train'))
+    obj = patcher.Patcher(WFUtils(dsFolder = 'q:/datasets/wider_face',setSel='any'))
     print(len(obj.dctFiles))
     obj.ShowClusterRandom()
     print('done!')

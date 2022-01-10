@@ -1,3 +1,4 @@
+import abstract_utils
 import os.path as path
 import json
 import glob
@@ -19,9 +20,9 @@ def GetDSTypeName():
         其中，里面必须包含如下结构：
             annotations/instances_{setSel}{yyy}.json
 '''
-class InternalCOCOUtils():
+class InternalCOCOUtils(abstract_utils.AbstractUtils):
     def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callback=None, maxCnt=50000, isShuffle=True, isFineCls=True):
-        self.pathBBox = '%s/annotation_%s.odgt' % (dsFolder, setSel)
+        super(InternalCOCOUtils, self).__init__(dsFolder, setSel, dctCfg, callback, maxCnt, isShuffle)
         self.dctFiles = {}
         self.setSel = setSel
         self.dctFile2Zf = {}
@@ -104,7 +105,7 @@ class InternalCOCOUtils():
             for (i, dct) in enumerate(lstCls):
                 # coco分大类和小类
                 dctWholeTagIDs[dct['id']] = dct['supercategory'] if isFineCls == False else \
-                    dct['supercategory'] + '/' + dct['name']
+                    dct['name'] + '`' + dct['supercategory']
                 dctTagIDs[dct['id']] = dct['supercategory'] if isFineCls == False else \
                     dct['name']
                 key1 = dctTagIDs[dct['id']]
@@ -178,6 +179,9 @@ class InternalCOCOUtils():
 
            
         bkpt = 0
+    def DelTag(self, sTag:str):
+        for dctItem in self.dctFiles:
+            bkpt = 0
         
     def MapFile(self, strFile:str):
         dct = self.lstZfs[int(strFile[:2])]
@@ -210,7 +214,7 @@ class COCOFineUtils(InternalCOCOUtils):
     def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callback=None, maxCnt=50000, isShuffle=True):
         super(COCOFineUtils, self).__init__(dsFolder, setSel, dctCfg, callback, maxCnt, isShuffle, True)
     def TranslateTag(self, tagIn):
-        ret = tagIn.split('/')[1]
+        ret = tagIn.split('`')[0]
         return ret
 
 if __name__ == '__main__':

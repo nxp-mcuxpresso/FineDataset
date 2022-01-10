@@ -30,7 +30,8 @@ class MainAppLogic():
         self.lstPatches = [] # 记录当前已经生成的patch，每个元素是一个字典
         self.strOutFolder = '' # 子块数据集的输出目录
         self.chkTags = []  # 记录动态生成的表示类别名称和实例数量的复选框
-        self.nextDSFolder = 'q:/datasets/COCO_2017'
+        self.nextDSFolder = 'q:/datasets/wider_face'
+        self.rndNdx = -1
         self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
         # 搜索 xxx_utils.py
         lstTypes = [x[:-3] for x in glob.glob('*_utils.py')]
@@ -38,6 +39,9 @@ class MainAppLogic():
             a = __import__(plugin)
             dsType = a.GetDSTypeName()
             dsCls = a.GetUtilClass()
+            if dsType is None:
+                # None类型，用于表示抽象类
+                continue
             if not isinstance(dsType, list):
                 dsType = [dsType]
                 dsCls = [dsCls]
@@ -87,11 +91,14 @@ class MainAppLogic():
         ui.btnValidateSingleFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
         ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateMultiFaceDataset) 
         ui.btnOriImg.clicked.connect(self.OnClicked_OriImage)       
-        ui.btnGenMultiFaceDataSet.clicked.connect(self.OnClicked_GenMultiFaceDataset)
+        ui.btnGenMultiFaceDataSet.clicked.connect(lambda: self.OnClicked_GenMultiFaceDataset())
         ui.btnTagSelAll.clicked.connect(self.OnClicked_TagSelAll)
         ui.btnTagSelInv.clicked.connect(self.OnClicked_TagSelInv)        
         ui.btnDSFolder.clicked.connect(self.OnClicked_DSFolder)
         ui.btnToVoc.clicked.connect(self.OnClicked_ToVOC)
+
+        ui.menuDbgGenMultiForCurrent.triggered.connect(lambda: self.OnClicked_GenMultiFaceDataset(ndcIn=[self.rndNdx]))
+        ui.menuDelNonCheckedTags.triggered.connect(lambda: self.dataObj.FilterTags(self.GetDisallowedTags()))
         ui.pgsBar.setVisible(False)
         ui.tmrToHidePgsBar = QtCore.QTimer(self.mainWindow)
         ui.tmrToHidePgsBar.setInterval(300)
@@ -114,7 +121,9 @@ class MainAppLogic():
             self.ui.btnSaveOriBBoxes.setEnabled(isEn)
             self.ui.btnGenSingleFaceDataSet.setEnabled(isEn)
             self.ui.btnGenMultiFaceDataSet.setEnabled(isEn) 
-            
+            self.ui.menuDbgGenMultiForCurrent.setEnabled(isEn)
+            self.ui.menuSpecifyImageNdx.setEnabled(isEn)
+            self.ui.menuDelNonCheckedTags.setEnabled(isEn)
             self.ui.btnTagSelAll.setEnabled(isEn)
             self.ui.btnTagSelInv.setEnabled(isEn)
             self.ui.btnValidateSingleFaceDataSet.setEnabled(isEn)
@@ -164,7 +173,9 @@ class MainAppLogic():
         self.ui.statusBar.showMessage('已保存到%s' % sOutFile, 5000)
 
     def OnClicked_Random(self):
-        [table, strKey] = self.dataObj.ShowRandom(False, allowedTags=self.GetAllowedTags())
+        [table, strKey, ndx] = self.dataObj.ShowRandom(False, allowedTags=self.GetAllowedTags())
+        self.rndNdx = ndx
+        self.ui.statusBar.showMessage('随机显示编号%d, 图片%s' % (ndx, strKey))
         self.ShowImage(table, strKey)
 
     def OnClicked_DSFolder(self):
@@ -224,10 +235,15 @@ class MainAppLogic():
             strOut += '\n' + lstReasons[i] + ' : ' + '%02.1f%%' % (lstRets[i]*100)
         QMessageBox.information(MainWindow, '生成结果统计', strOut)
 
-    def OnClicked_GenMultiFaceDataset(self):
-        cnt = len(self.dataObj.dctFiles.keys())
-        ndc = np.arange(cnt)
+    def OnClicked_GenMultiFaceDataset(self, ndcIn=[]):
+        if len(ndcIn) == 0:
+            cnt = len(self.dataObj.dctFiles.keys())
+            ndc = np.arange(cnt)
+        else:
+            cnt = len(ndcIn)
+            ndc = np.array(ndcIn)
         np.random.shuffle(ndc)
+
         strOutFolder = './outs/out_%s_multi' % (self.ui.cmbSubSet.currentText())
         strOutFolder = self.GetNextFreeFolder(strOutFolder)
         self.strOutFolder = strOutFolder
@@ -385,6 +401,16 @@ class MainAppLogic():
                 outText = ' :'.join(oriText.split(':')[:-1])[:-1]
                 lstTags.append(outText)
         return lstTags
+
+    def GetDisallowedTags(self):
+        lstTags = []
+        for item in self.chkTags:
+            chk = item[0]
+            if not chk.isChecked():
+                oriText = chk.text()
+                outText = ' :'.join(oriText.split(':')[:-1])[:-1]
+                lstTags.append(outText)
+        return lstTags        
         
     def LoadDataset(self, dsFolder, isForced=False):
         # QMessageBox.information(None,'box',ui.cmbSubSet.currentText())

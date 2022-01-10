@@ -5,7 +5,7 @@ import os.path as path
 import os
 import json
 import random
-
+import abstract_utils
 from numpy.lib.type_check import isreal
 def DelTree(treeName, isDelDir=False, isDelRoot=False):
     'delete a tree, recursively, it can be non empty!'
@@ -26,7 +26,7 @@ def DelTree(treeName, isDelDir=False, isDelRoot=False):
         os.rmdir(treeName)
 
 class Patcher():
-    def __init__(self, provider):
+    def __init__(self, provider:abstract_utils.AbstractUtils):
         '''
         provider对象必须包含以下属性
             1. dctFiles: 指出数据集中的文件 
@@ -271,7 +271,7 @@ class Patcher():
             maxPatchPerImg=10, allowedTags=['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
-        lstRet, img = self.GetClusters(ndx, isShow=False, maxObjPerCluster=maxObjPerCluster, allowedTags=allowedTags)
+        lstRet, img = self.GetClusters(ndx, isShow=False, minClose=minCloseRate, maxObjPerCluster=maxObjPerCluster, allowedTags=allowedTags)
         if maxObjPerCluster < 3:
             lstOriPats = lstRet[0]
         elif maxObjPerCluster < 4:
@@ -545,8 +545,8 @@ class Patcher():
 
     def ShowImage(self, ndx, isShow, allowedTags = ['*']):
         strFile = list(self.dctFiles.keys())[ndx]
-        return self.ShowImageFile(strFile, isShow, allowedTags)
-
+        ret = self.ShowImageFile(strFile, isShow, allowedTags)
+        return ret + [ndx]
     def ShowRandom(self, isShow=True, allowedTags = ['*']):
         ndx = np.random.randint(len(self.dctFiles))
         return self.ShowImage(ndx, isShow, allowedTags)
@@ -572,6 +572,9 @@ class Patcher():
             cv2.putText(img, '%s' % (bbox[4]) \
                 , pt1, cv2.FONT_HERSHEY_PLAIN, 1, col)
         return np.array(img), ndx, item
-
+    def FilterTags(self, tagsToDel:list):
+        ret = self.provider.DelTags(tagsToDel)
+        self.dctFiles = self.provider.dctFiles
+        return ret                    
 if __name__ == '__main__':
     exit(-1)

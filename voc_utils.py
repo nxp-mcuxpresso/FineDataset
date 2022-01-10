@@ -7,7 +7,7 @@ import xmltodict
 import xml.dom.minidom
 import traceback
 import time
-
+import abstract_utils
 def GetDSTypeName():
     return "VOC"
 
@@ -50,7 +50,7 @@ def Xml2Dict(xmlData):
     return dct
 
 
-class VOCUtils():
+class VOCUtils(abstract_utils.AbstractUtils):
 
     def ParseAnno(self, an, dctNewCfg):
 
@@ -94,6 +94,7 @@ class VOCUtils():
         return lstXywhs
 
     def __init__(self, dsFolder = '.', setSel='train', dctCfg={}, callback=None):
+        super(VOCUtils, self).__init__(dsFolder, setSel, dctCfg, callback)
         self.dsFolder = dsFolder
         self.dctTags = dict()
         self.dctFiles = dict()
