@@ -2,7 +2,7 @@ import sys
 from PyQt5 import QtGui, QtCore
 import PyQt5
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QCheckBox, QWidget, QApplication, QMainWindow, QMessageBox, QStatusBar, QFileDialog
+from PyQt5.QtWidgets import QCheckBox, QWidget, QApplication, QMainWindow, QMessageBox, QStatusBar, QFileDialog, QInputDialog
 from PyQt5.QtCore import Qt
 import widertools
 import json
@@ -35,6 +35,7 @@ class MainAppLogic():
         self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
         # 搜索 xxx_utils.py
         lstTypes = [x[:-3] for x in glob.glob('*_utils.py')]
+        pluginCnt = 0
         for plugin in lstTypes:
             a = __import__(plugin)
             dsType = a.GetDSTypeName()
@@ -48,9 +49,10 @@ class MainAppLogic():
             for (i,ds) in enumerate(dsType):
                 ui.cmbDSType.addItem(ds)
                 self.dctPlugins[ds] = dsCls[i]
+                pluginCnt += 1
 
         # ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
-        ui.cmbDSType.setCurrentIndex(0)
+        ui.cmbDSType.setCurrentIndex(pluginCnt - 1)
         ui.cmbSubSet.addItems(['train','val', 'any'])
         ui.cmbMaxFacesPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
         #ui.cmbMinCloseRate.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
@@ -74,7 +76,7 @@ class MainAppLogic():
         ui.cmbMinAreaRate.addItems(CalcCmbValues(0.00008, 0.99, 2**0.5, True))
         ui.cmbMaxAreaRate.addItems(CalcCmbValues(0.00008, 0.99, 2**0.5, True))
         ui.cmbMinCloseRate.addItems(CalcCmbValues(0.01, 0.6, 1.25, False))
-        ui.cmbMinAreaRate.setCurrentIndex(12)
+        ui.cmbMinAreaRate.setCurrentIndex(15)
         ui.cmbMaxAreaRate.setCurrentIndex(2)
         ui.cmbMinCloseRate.setCurrentIndex(5)
         #ui.cmbSubSet.currentIndexChanged.connect(lambda: LoadDataset(ui))
@@ -99,6 +101,7 @@ class MainAppLogic():
 
         ui.menuDbgGenMultiForCurrent.triggered.connect(lambda: self.OnClicked_GenMultiFaceDataset(ndcIn=[self.rndNdx]))
         ui.menuDelNonCheckedTags.triggered.connect(lambda: self.dataObj.FilterTags(self.GetDisallowedTags()))
+        ui.menuSpecifyImageNdx.triggered.connect(lambda: self.OnMenuTriggered_SpecifyImageNdx())
         ui.pgsBar.setVisible(False)
         ui.tmrToHidePgsBar = QtCore.QTimer(self.mainWindow)
         ui.tmrToHidePgsBar.setInterval(300)
@@ -113,8 +116,19 @@ class MainAppLogic():
         # ui.btnValidateMultiFaceDataSet.setEnabled(False)
         # ui.cmbMaxFacesPerCluster.setEnabled(False)
         ui.btnSaveOriBBoxes.clicked.connect(self.OnClicked_SaveOriBBoxes)
-        #if ui.chkAutoload.isChecked():
-        #    self.LoadDataset('q:/datasets/wider_face')
+        if ui.chkAutoload.isChecked():
+            self.LoadDataset('q:/datasets/wider_face')
+
+    def OnMenuTriggered_SpecifyImageNdx(self):
+        ndx, isOK = QInputDialog.getInt(MainWindow, '设置当前图片索引', '请输入索引：', min = 0) 
+        if isOK:
+            try:
+                [table, strKey, ndx] = self.dataObj.ShowAt(ndx, False, allowedTags=self.GetAllowedTags())
+                self.ui.statusBar.showMessage('显示指定编号%d, 图片%s' % (ndx, strKey))
+                self.ShowImage(table, strKey)        
+                self.rndNdx = ndx
+            except:
+                self.ui.statusBar.showMessage('无效的图片号%d' % (ndx))
 
     def SetEnableStateBaseedOnDatasetAvailibiblity(self,isEn):
             self.ui.btnRandom.setEnabled(isEn)

@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import os.path as path
 import os
+import math
 import json
 import random
 import abstract_utils
@@ -36,7 +37,12 @@ class Patcher():
         self.dctFiles = provider.dctFiles
         self.provider = provider
 
-    def GetClusters(self, ndx, minClose=0.5, isDraw=False, isShow=True, maxObjPerCluster=10, allowedTags=['*'], maxPairs=100):
+        # 子块包含的物体越多，对minCloseRate的要求就按比例降低，现在是按2**0.5
+        # lstClsoeDecay[0] 用于含有3个物体的框, 依此类推
+        self.lstCloseDecay = [1/math.log(x+3) for x in range(1, 20)]   
+        bkpt = 0
+
+    def GetClusters(self, ndx, minClose=0.5, isDraw=False, isShow=True, maxObjPerCluster=10, outWvsH=1, allowedTags=['*'], maxPairs=100):
         '''
         GetClusters: 获取图片中人脸的群聚。minClose表示bbox的面积之和除以这些bbox的总面积
         返回 [[二个脸的框], [三个脸的框], [多个脸的框]], opencv标注后的图
@@ -46,7 +52,7 @@ class Patcher():
         bboxCnt = len(item['xywhs'])
         if len(item['xywhs']) < 2:
             return [[],[],[]],None
-        
+     
         def _getValues(b1):
             w1 = b1['w']
             h1 = b1['h']
@@ -59,87 +65,142 @@ class Patcher():
             cy1 = [b1['y1'] + b1['h'] / 2] 
             return w1, h1, x1, y1, x2, y2, cx1, cy1, sqrtA
 
-        def _multiMerge(lstIn:list, maxObjPerCluster):
-                lstMulti = []
-                lstLeft = []
-                lstConsumed = []
-                for i in range(len(lstIn)):
-                    multiIn = lstIn[i]
-                    isMerged = False
-                    if len(multiIn[6]) < maxObjPerCluster:
-                        b1 = multiIn[3]
-                        wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(b1)                    
-                        setIn = set(multiIn[6])
-                        for j in range(i + 1, len(lstIn)):
-                            # 检查当前的外循环元素是否在之前的合并中被用掉了
-                            for altBox in lstMulti:
-                                setAltBox = set(altBox[6])
-                                if setIn.issubset(setAltBox):# and not setAltBox.issubset(setIn):
-                                    isMerged = True
-                                    break
-                            if isMerged:
-                                break                        
-                            b2 = lstIn[j][3]
-                            wj, hj, x1j, y1j, x2j, y2j, cxj, cyj, sqrtAj = _getValues(b2)
+        def _DelSubsets(lstLess, lstMore):
+            lstNewLess = []
+            for less in lstLess:
+                setLess = set(less[6])
+                isMerged = False
+                for more in lstMore:
+                    setMore = set(more[6])
+                    if setLess.issubset(setMore):
+                        isMerged = True
+                        break
+                if isMerged == False:
+                    lstNewLess.append(less)             
+            return lstNewLess
 
-                            x1o = x1i if x1i < x1j else x1j
-                            y1o = y1i if y1i < y1j else y1j
-                            x2o = x2i if x2i > x2j else x2j
-                            y2o = y2i if y2i > y2j else y2j
-                            # 相交区
-                            x1It = x1i if x1i > x1j else x1j
-                            y1It = y1i if y1i > y1j else y1j
-                            x2It = x2i if x2i < x2j else x2j
-                            y2It = y2i if y2i < y2j else y2j
-                            if x1It >= x2It or y1It >= y2It:
-                                # 不相交的两个框
-                                iou = 0
-                            else:
-                                itArea = (x2It - x1It) * (y2It - y1It)
-                                unArea = (x2o - x1o) * (y2o - y1o)
-                                iou = itArea / unArea
-                            if iou < 0.05:
-                                continue
-                            dctBbox = {
-                                'x1' : x1o,
-                                'y1' : y1o,
-                                'w': x2o - x1o,
-                                'h': y2o - y1o
-                            }
-                            # 检查dctBbox是不是已经出现在已有的里了
-                            isRepeat = False
-                            for tmp in lstMulti:
-                                bB1 = tmp[3]
-                                if bB1['x1'] == x1o and bB1['y1'] == y1o and bB1['w'] == x2o-x1o and bB1['h'] == y2o - y1o:
-                                    isRepeat = True
-                                    break
-                            if isRepeat:
-                                continue
-                            areaO = dctBbox['w'] * dctBbox['h']
-                            # 找到原始框标号的并集
-                            set1 = set(multiIn[6])
-                            set2 = set(lstIn[j][6])
-                            set3 = set1.union(set2)
-                            lstTmp = list(set3)
-                            if len(lstTmp) > maxObjPerCluster:
-                                random.shuffle(lstTmp)
-                                lstTmp = lstTmp[:maxObjPerCluster]
-                                lstTmp.sort()
-                            # 找到物体框的并集
-                            lstUn = [item['xywhs'][x] for x in lstTmp]
-                            areaIJ = 0
-                            for xywh in lstUn:
-                                areaIJ += xywh['w'] * xywh['h']
-                            closeRate = areaIJ / areaO                        
-                            isMerged = True
+
+        def _DelSubsetsFromSameList(lstIn0:list):
+            if len(lstIn0) < 2:
+                return lstIn0
+            # 物体个数从多到少排序
+            lstIn = lstIn0
+            lstIn.sort(key=lambda x: len(x[6]), reverse=True)
+            lstLeft = lstIn[:1]
+            i = 0
+            while(True):
+                cnt = len(lstIn)                
+                delMask = np.zeros(cnt, dtype='int32')
+                while i < cnt:
+                    setOuter = set(lstIn[i][6])
+                    delCnt = 0
+                    for j in range(cnt-1, i, -1):
+                        setInner = set(lstIn[j][6])
+                        if setInner.issubset(setOuter):
+                            delMask[j] = 1
+                            delCnt += 1
+                    i += 1
+                    if delCnt != 0:
+                        lstLeft = []
+                        for j in range(cnt):
+                            if delMask[j] == 0:
+                                lstLeft.append(lstIn[j])
+                        lstIn = lstLeft  
+                        break
+                
+                if delCnt == 0:
+                    break
+                delCnt = 0
+            return lstLeft
+
+        def _multiMerge(lstIn:list, maxObjPerCluster, minClsoeRate, outWvsH, lstCloseDecay):
+            lstMulti = []
+            lstLeft = []
+            lstConsumed = []
+
+            for i in range(len(lstIn)):
+                multiIn = lstIn[i]
+                isMerged = False
+                if len(multiIn[6]) < maxObjPerCluster:
+                    b1 = multiIn[3]
+                    wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(b1)                    
+                    for j in range(i + 1, len(lstIn)):
+                    
+                        b2 = lstIn[j][3]
+                        wj, hj, x1j, y1j, x2j, y2j, cxj, cyj, sqrtAj = _getValues(b2)
+
+                        x1o = x1i if x1i < x1j else x1j
+                        y1o = y1i if y1i < y1j else y1j
+                        x2o = x2i if x2i > x2j else x2j
+                        y2o = y2i if y2i > y2j else y2j
+                        # 相交区
+                        x1It = x1i if x1i > x1j else x1j
+                        y1It = y1i if y1i > y1j else y1j
+                        x2It = x2i if x2i < x2j else x2j
+                        y2It = y2i if y2i < y2j else y2j
+                        if x1It >= x2It or y1It >= y2It:
+                            # 不相交的两个框
+                            iou = 0
+                        else:
+                            itArea = (x2It - x1It) * (y2It - y1It)
+                            unArea = (x2o - x1o) * (y2o - y1o)
+                            iou = itArea / unArea
+                        if iou < 0.05:
+                            continue
+                        dctBbox = {
+                            'x1' : x1o,
+                            'y1' : y1o,
+                            'w': x2o - x1o,
+                            'h': y2o - y1o
+                        }
+                        # 检查dctBbox是不是已经出现在已有的里了
+                        isRepeat = False
+                        for tmp in lstMulti:
+                            bB1 = tmp[3]
+                            if bB1['x1'] == x1o and bB1['y1'] == y1o and bB1['w'] == x2o-x1o and bB1['h'] == y2o - y1o:
+                                isRepeat = True
+                                break
+                        if isRepeat:
+                            continue
+                        areaO = dctBbox['w'] * dctBbox['h']
+                        wVSh = dctBbox['w'] / dctBbox['h']
+                        # 找到原始框标号的并集
+                        set1 = set(multiIn[6])
+                        set2 = set(lstIn[j][6])
+                        set3 = set1.union(set2)
+                        lstTmp = list(set3)
+                        if len(lstTmp) > maxObjPerCluster:
+                            random.shuffle(lstTmp)
+                            lstTmp = lstTmp[:maxObjPerCluster]
+                            lstTmp.sort()
+                        # 找到物体框的并集
+                        lstUn = [item['xywhs'][x] for x in lstTmp]
+                        areaIJ = 0
+                        for xywh in lstUn:
+                            areaIJ += xywh['w'] * xywh['h']
+                        closeRate = areaIJ / areaO
+                        # 后面的步骤中，对于不符合输出高宽比的图像会尝试膨胀，相当于有效closeRate变低
+                        aspectErr = wVSh / outWvsH if wVSh > outWvsH else outWvsH / wVSh
+                        effCloseRate = closeRate / aspectErr
+                        
+                        decay = lstCloseDecay[len(lstTmp) - 3]
+                        if effCloseRate >= minClsoeRate * decay:
                             lstMulti.append([lstUn, (x1o, y1o), (x2o, y2o), dctBbox, areaIJ, closeRate, lstTmp])
+                        if False:
+                            isMerged = True
                             if lstIn[j] not in lstConsumed:
                                 lstConsumed.append(lstIn[j])
-                    if isMerged == True and multiIn not in lstConsumed:
-                        lstConsumed.append(multiIn)
-                    if isMerged == False and multiIn not in lstConsumed:
-                        lstLeft.append(multiIn)
-                return lstMulti, lstLeft
+                
+                
+            lstLeft = _DelSubsets(lstIn, lstMulti)
+            lstMulti= _DelSubsetsFromSameList(lstMulti)
+            
+            if False:
+                if isMerged == True and multiIn not in lstConsumed:
+                    lstConsumed.append(multiIn)
+                if isMerged == False and multiIn not in lstConsumed:
+                    lstLeft.append(multiIn)
+            return lstMulti, lstLeft
 
         # 先获取靠近的一对
         lstPairs = []
@@ -164,7 +225,10 @@ class Patcher():
                 areaO = wo * ho
                 areaIJ = wi * hi + wj * hj
                 closeRate = areaIJ / areaO
-                if closeRate >= minClose:
+                wVSh = wo / ho
+                aspectErr = wVSh / outWvsH if wVSh > outWvsH else outWvsH / wVSh
+
+                if closeRate / aspectErr >= minClose:
                     dctBbox = {
                         'x1' : x1o,
                         'y1' : y1o,
@@ -224,7 +288,9 @@ class Patcher():
                     areaO = wo * ho
                     areaIJ = pair[4] + wj * hj
                     closeRate = areaIJ / areaO
-                    if closeRate >= minClose:
+                    wVSh = wo / ho
+                    aspectErr = wVSh / outWvsH if wVSh > outWvsH else outWvsH / wVSh
+                    if closeRate / aspectErr >= minClose * self.lstCloseDecay[0]:
                         dctBbox = {
                             'x1' : x1o,
                             'y1' : y1o,
@@ -237,37 +303,28 @@ class Patcher():
                         lstTrints.append([pair[0] + [b2], (x1o, y1o), (x2o, y2o), dctBbox, areaIJ,closeRate, lstTmp])
                         isMerged = True
             lstTrints.sort(key=lambda x:x[5], reverse=True)
+            lstNewPairs = _DelSubsets(lstPairs, lstTrints)
             lstNewTrints = lstTrints                
-            for pair in lstPairs:
-                setPair = set(pair[6])
-                isMerged = False
-                for trint in lstTrints:
-                    setTrint = set(trint[6])
-                    if setPair.issubset(setTrint):
-                        isMerged = True
-                        break
-                if isMerged == False:
-                    lstNewPairs.append(pair)     
-                
+
             # random.shuffle(lstTrints)
 
-            if maxObjPerCluster >= 4:
-                lstTrints.sort(key=lambda x:x[5], reverse=False)
+            if maxObjPerCluster >= 4 and len(lstTrints) > 0:
+                lstTrints.sort(key=lambda x:x[5], reverse=True)
                 if len(lstTrints) > maxPairs:
                     lstTrints = lstTrints[:maxPairs]        
                 # 在三元组中合并交并比适中的
-                lstMulti, lstLeft = _multiMerge(lstTrints, maxObjPerCluster)
+                lstMulti, lstLeft = _multiMerge(lstTrints, maxObjPerCluster, minClose, outWvsH, self.lstCloseDecay)
                 # 最后的合并
-                
-                lstMulti.sort(key=lambda x:x[5], reverse=False)
-                for mergeCnt in range(3):
-                    if len(lstMulti) > maxPairs:
-                        lstMulti = lstMulti[:maxPairs]
-                    oldLen = len(lstMulti)
-                    lstMulti, lstLeft = _multiMerge(lstMulti + lstLeft, maxObjPerCluster)
-                    newLen = len(lstMulti)
-                    if newLen == oldLen or newLen == 1:
-                        break
+                if len(lstMulti) >= 2:
+                    lstMulti.sort(key=lambda x:x[5], reverse=False)
+                    for mergeCnt in range(3):
+                        if len(lstMulti) > maxPairs:
+                            lstMulti = lstMulti[:maxPairs]
+                        oldLen = len(lstMulti)
+                        lstMulti, lstLeft = _multiMerge(lstMulti + lstLeft, maxObjPerCluster, minClose, outWvsH, self.lstCloseDecay)
+                        newLen = len(lstMulti)
+                        if newLen == oldLen or newLen == 1:
+                            break
                 lstNewTrints = lstLeft
         self.provider.MapFile(strFile)
         image = Image.open(self.provider.MapFile(strFile))
@@ -301,10 +358,11 @@ class Patcher():
     '''
     def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[1.00, 0.8], outSize = [96, 128], \
             ndx=-1, strFile='', maxObjPerCluster=10, minCloseRate=0.333, areaRateRange=[0,1], 
-            maxPatchPerImg=10, allowedTags=['*'], dbgSkips=[]):
+            maxPatchPerImg=30, allowedTags=['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
-        lstRet, img = self.GetClusters(ndx, isShow=False, minClose=minCloseRate, maxObjPerCluster=maxObjPerCluster, allowedTags=allowedTags)
+        wVsH = outSize[0] / outSize[1]
+        lstRet, img = self.GetClusters(ndx, isShow=False, minClose=minCloseRate, maxObjPerCluster=maxObjPerCluster, outWvsH=wVsH, allowedTags=allowedTags)
         if maxObjPerCluster < 3:
             lstOriPats = lstRet[0]
         elif maxObjPerCluster < 4:
@@ -318,7 +376,7 @@ class Patcher():
 
         image = Image.open(self.provider.MapFile(strFile))
         lstPatches = []
-        wVsH = outSize[0] / outSize[1]
+        
         random.shuffle(lstOriPats)
         # pat打包格式：[[子框],(x1, y1),(x2,y2), bbox, 面积]
         newPatchCnt = 0
@@ -329,6 +387,11 @@ class Patcher():
         skipTooDenseCnt = 0
         skipTooManyCnt = 0
         totalCnt = 0
+
+        strFile = list(self.dctFiles.keys())[ndx]
+        item = self.dctFiles[strFile]
+        bboxCnt = len(item['xywhs'])
+
         for (i, pat) in enumerate(lstOriPats):
             totalCnt += len(pat[0])
             if len(pat[0]) > maxObjPerCluster:
@@ -337,15 +400,14 @@ class Patcher():
             if newPatchCnt >= maxPatchPerImg:
                 skipTooManyCnt += len(pat[0])
                 continue
-            bbox = pat[3]
-            w  = bbox['w']
-            h = bbox['h']
-            x1 = bbox['x1']
-            y1 = bbox['y1']
-            cx = x1 + w // 2
-            cy = y1 + h // 2            
-            scaler = 0.95
-            def _GetXYXY(cx, cy, w, h, wMax, hMax, scaler, wVsH, isAdaptiveExpand=True):
+            
+            def _GetXYXY(xywh, wMax, hMax, scaler, wVsH, isAdaptiveExpand=True):
+                w  = xywh['w']
+                h = xywh['h']
+                x1 = xywh['x1']
+                y1 = xywh['y1']
+                cx = x1 + w // 2
+                cy = y1 + h // 2 
                 w2 = w / scaler
                 h2 = h / scaler
                 if isAdaptiveExpand == True:
@@ -380,8 +442,12 @@ class Patcher():
                 y12 = int(cy2 - h2 // 2 + 0.5)
                 x22 = int(cx2 + w2 // 2 + 0.5)
                 y22 = int(cy2 + h2 // 2 + 0.5)
-                return x12, y12, x22, y22, w2, h2            
-            aspectErr = w/h / wVsH
+                return cx, cy, w, h, x12, y12, x22, y22, w2, h2             
+            
+            bbox = pat[3]
+            scaler = 0.95
+                       
+            aspectErr = bbox['w']/ bbox['h'] / wVsH
             if aspectErr > 5.0 or aspectErr < 0.2:
                 skipBadAspectCnt += len(pat[0])
                 continue
@@ -394,11 +460,11 @@ class Patcher():
                 # w2, h2,cx2, cy2, x12, x22, y12, y22表示输出patch的几何信息
 
                 # 当子块的长宽比不符合输出的长宽比时，先投机地尝试扩大子块范围以符合长宽比要求
-                x12,y12,x22,y22,w2,h2 = _GetXYXY(cx, cy, w, h, image.width, image.height, scaler, wVsH, True)
+                cx, cy, w, h, x12,y12,x22,y22,w2,h2 = _GetXYXY(bbox, image.width, image.height, scaler, wVsH, True)
                 if x22 >= image.width or y22 >= image.height:
                     
                     # 若扩大子块后导致它超过原图的边界，则老实地剪切子块中超出的部分
-                    x12,y12,x22,y22,w2,h2 = _GetXYXY(cx, cy, w, h, image.width, image.height, scaler, wVsH, False)
+                    cx, cy, w, h, x12,y12,x22,y22,w2,h2 = _GetXYXY(bbox, image.width, image.height, scaler, wVsH, False)
                 # 上面的操作导致需要重新计算closeRate
 
                 cropped = image.crop((x12, y12, x22, y22))
@@ -408,7 +474,7 @@ class Patcher():
                 lstBBxyxys = []
                 areaIJ = 0
                 areaO = w2 * h2
-                for subBox in pat[0]:
+                for subBox in item['xywhs']: #pat[0]:
                     # 去除经过剪裁后已经位于外面的物体框
                     ptx1 = subBox['x1'] - x12
                     pty1 = subBox['y1'] - y12
@@ -427,7 +493,7 @@ class Patcher():
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
                     lstBBxyxys.append([ptx1, pty1, ptx2, pty2, subBox['tag']])
                 closeRate = areaIJ / areaO
-                if closeRate < minCloseRate:
+                if closeRate < minCloseRate * self.lstCloseDecay[len(pat[0])]:
                     newSkipNotCloseCnt = len(pat[0])
                     continue
                 skipBadSizeCnt += newSkipBadSizeCnt

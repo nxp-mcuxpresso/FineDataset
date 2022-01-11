@@ -369,5 +369,7 @@ class Ui_MainWindow(object):
         self.menu_3.setTitle(_translate("MainWindow", "工具"))
         self.actiontrain.setText(_translate("MainWindow", "train"))
         self.menuDbgGenMultiForCurrent.setText(_translate("MainWindow", "Generate Multi-patch dataset for current image"))
+        self.menuDbgGenMultiForCurrent.setShortcut(_translate("MainWindow", "Ctrl+D"))
         self.menuSpecifyImageNdx.setText(_translate("MainWindow", "Specify image number"))
+        self.menuSpecifyImageNdx.setShortcut(_translate("MainWindow", "Ctrl+N"))
         self.menuDelNonCheckedTags.setText(_translate("MainWindow", "Delete non-checked categories"))

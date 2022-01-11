@@ -867,10 +867,16 @@
    <property name="text">
     <string>Generate Multi-patch dataset for current image</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
   </action>
   <action name="menuSpecifyImageNdx">
    <property name="text">
     <string>Specify image number</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
    </property>
   </action>
   <action name="menuDelNonCheckedTags">
