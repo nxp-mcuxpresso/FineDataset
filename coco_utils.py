@@ -31,7 +31,7 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
         self.lstAnns = []
         self.dctTagToWholeTag = dict()
         self.dctTags = dict()
-
+        dctFiles = dict()
         minHvsW, maxHvsW = 0.1, 10.0
         minGTPerImg, maxGTPerImg = 1, 50
         try:
@@ -164,26 +164,44 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
                     pass
                 
                 tag = dctItem['tag']
-
-                try:
-                    self.dctTags[tag] += 1
-                except:
-                    self.dctTags[tag] = 1
                 
-                if imgKey in self.dctFiles:
-                    if item['cnt'] < maxGTPerImg:
-                        item = self.dctFiles[imgKey]
-                        item['cnt'] += 1
-                        item['cnt0'] += 1
-                        item['xywhs'].append(dctItem)
+                if imgKey in dctFiles:                    
+                        item = dctFiles[imgKey]
+                        if item['cnt'] < maxGTPerImg:
+                            item['cnt'] += 1
+                            item['cnt0'] += 1
+                            item['xywhs'].append(dctItem)
                 else:
-                    self.dctFiles[imgKey] = {
+                    dctFiles[imgKey] = {
                         'cnt': 1,
                         'cnt0': 1,
                         'xywhs': [dctItem]
                     }
 
-           
+        dctFilt = dict()
+        t0 = time.time()
+        for (i, itemKey) in enumerate(dctFiles.keys()):
+            if i % 1000 == 0:
+                default_callback(i*100/len(dctFiles), '根据物体数量约束筛选', callback)            
+            item = dctFiles[itemKey]
+            cnt = item['cnt']
+            if cnt >= minGTPerImg and cnt <= maxGTPerImg:
+                dctFilt[itemKey] = item
+                for xywh in item['xywhs']:
+                    tag = xywh['tag']
+                    # 两者性能似乎没有显著差异
+                    if False:
+                        if not tag in self.dctTags.keys():
+                            self.dctTags[tag] = 1
+                        else:
+                            self.dctTags[tag] += 1
+                    else:
+                        try:
+                            self.dctTags[tag] += 1
+                        except:
+                            self.dctTags[tag] = 1                         
+        dt = time.time() - t0
+        self.dctFiles = dctFilt
         bkpt = 0
     def DelTag(self, sTag:str):
         for dctItem in self.dctFiles:

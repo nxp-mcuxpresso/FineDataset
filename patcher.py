@@ -236,7 +236,6 @@ class Patcher():
                         'h': y2o - y1o,
                     }
                     lstPairs.append([[b1, b2], (x1o, y1o), (x2o, y2o), dctBbox, areaIJ, closeRate, [i, j]])
-        random.shuffle(lstPairs)
         lstPairs.sort(key=lambda x: x[5], reverse=True)
         lstNewPairs = lstPairs # lstNewPairs后面存储没有被合并到三元组的对子
         lstNewTrints = []  # lstNewTrints 后面存储没有被合并到多元组的三元组
@@ -339,7 +338,11 @@ class Patcher():
             if isShow:
                 cv2.imshow("OpenCV",img)
                 cv2.waitKey()
+        
+        
         lstRet = [lstNewPairs, lstNewTrints, lstMulti]
+        lstRet = [lstPairs, lstTrints, lstMulti]
+        
         if len(lstRet) > 10:
             i = 0
         return lstRet, np.array(img)
@@ -358,7 +361,7 @@ class Patcher():
     '''
     def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[1.00, 0.8], outSize = [96, 128], \
             ndx=-1, strFile='', maxObjPerCluster=10, isAllowMorePerPatch=True, 
-            minCloseRate=0.333, areaRateRange=[0,1], maxPatchPerImg=30, allowedTags=['*'], dbgSkips=[]):
+            minCloseRate=0.333, areaRateRange=[0,1], maxPatchPerImg=25, allowedTags=['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
         wVsH = outSize[0] / outSize[1]
@@ -368,6 +371,7 @@ class Patcher():
         elif maxObjPerCluster < 4:
             lstOriPats = lstRet[1] + lstRet[0]
         else:
+            # 把含有更物体的框排在前面
             lstOriPats = lstRet[2] + lstRet[1] + lstRet[0]
         # item = self.dctFiles[strFile]
         if len(lstOriPats) < 1:
@@ -478,6 +482,9 @@ class Patcher():
                 for subBox in item['xywhs']:
                     if not isAllowMorePerPatch and boxCnt >= len(pat[0]):
                         break
+                    if not subBox['tag'] in allowedTags:
+                        if '*' != allowedTags[0]:
+                            continue                    
                     # 去除经过剪裁后已经位于外面的物体框
                     ptx1 = subBox['x1'] - x12
                     pty1 = subBox['y1'] - y12

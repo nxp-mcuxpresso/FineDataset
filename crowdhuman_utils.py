@@ -84,7 +84,7 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
                 xywh = gtIn['vbox'] # fbox会把遮挡的部分也算进去
                 area = xywh[3] * xywh[2] / 100.0
                 tag = gtIn['tag']
-                self.dctTags[tag] += 1
+                
                 dctItem = {
                     'x1' : xywh[0],
                     'y1' : xywh[1],
@@ -136,6 +136,8 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
             lstPassed.sort(key=lambda x: x['area'],reverse=True)
 
             if len(lstPassed) >= minGTPerImg and len(lstPassed) <= maxGTPerImg:
+                for xyxy in lstPassed:
+                    self.dctTags[xyxy['tag']] += 1
                 self.dctFiles['Images/' + dctIn['ID'] + '.jpg'] = {
                     'cnt0' : len(dctIn['gtboxes']),
                     'cnt' : len(lstPassed),

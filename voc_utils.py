@@ -66,11 +66,6 @@ class VOCUtils(abstract_utils.AbstractUtils):
             hVSw = h / w
             if hVSw < dctNewCfg['minHvsW'] or hVSw > dctNewCfg['maxHvsW']:
                 continue
-            tag = obj['name']
-            if tag not in self.dctTags.keys():
-                self.dctTags[tag] = 1
-            else:
-                self.dctTags[tag] += 1
 
             dctItem = {
                 'x1' : x,
@@ -137,6 +132,12 @@ class VOCUtils(abstract_utils.AbstractUtils):
                 lstBBoxes = self.ParseAnno(an, dctNewCfg)
                 if len(lstBBoxes) >= minGTPerImg and len(lstBBoxes) <= maxGTPerImg:
                     fileKey = path.splitext(path.split(sFile)[-1])[0]
+                    for xywh in lstBBoxes:
+                        tag = xywh['tag']
+                        if not tag in self.dctTags.keys():
+                            self.dctTags[tag] = 1
+                        else:
+                            self.dctTags[tag] += 1                     
                     self.dctFiles[fileKey] = {
                         'cnt0' : len(an['object']),
                         'cnt' : len(lstBBoxes),
@@ -174,8 +175,14 @@ class VOCUtils(abstract_utils.AbstractUtils):
                             if isinstance(an['object'],list) == False:
                                 an['object'] = [an['object']]
                             lstBBoxes = self.ParseAnno(an, dctNewCfg)
-                            if len(lstBBoxes) > 0:
+                            if len(lstBBoxes) >= minGTPerImg and len(lstBBoxes) <= maxGTPerImg:
                                 fileKey = '{:02}_'.format(tarNdx) + info.name.split('/')[-1][:-4]
+                                for xywh in lstBBoxes:
+                                    tag = xywh['tag']
+                                    if not tag in self.dctTags.keys():
+                                        self.dctTags[tag] = 1
+                                    else:
+                                        self.dctTags[tag] += 1                                    
                                 self.dctFiles[fileKey] = {
                                     'cnt0' : len(an['object']),
                                     'cnt' : len(lstBBoxes),

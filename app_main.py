@@ -55,6 +55,7 @@ class MainAppLogic():
         ui.cmbDSType.setCurrentIndex(pluginCnt - 1)
         ui.cmbSubSet.addItems(['train','val', 'any'])
         ui.cmbMaxFacesPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
+        ui.cmbMaxFacesPerCluster.setCurrentIndex(5)
         #ui.cmbMinCloseRate.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         #ui.cmbMinCloseRate.setCurrentIndex(3)
         
@@ -256,9 +257,13 @@ class MainAppLogic():
         if len(ndcIn) == 0:
             cnt = len(self.dataObj.dctFiles.keys())
             ndc = np.arange(cnt)
+            maxPatchPerImg = 10
         else:
+            # 为指定图片生成子块，多是调试目的
             cnt = len(ndcIn)
             ndc = np.array(ndcIn)
+            # 调试目的下基本不限制每个图片生成的子块数
+            maxPatchPerImg = 50
         np.random.shuffle(ndc)
 
         strOutFolder = './outs/out_%s_multi' % (self.ui.cmbSubSet.currentText())
@@ -290,7 +295,7 @@ class MainAppLogic():
             self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
             self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(
                 strOutFolder, self.patchNdx, ndx=ndx, minCloseRate=minClose, maxObjPerCluster=maxObjPerCluster, 
-                isAllowMorePerPatch=mainUI.chkAllowMoreObj.isChecked(),
+                isAllowMorePerPatch=mainUI.chkAllowMoreObj.isChecked(), maxPatchPerImg=maxPatchPerImg,
                 areaRateRange=[minAreaRate, maxAreaRate], outSize=[outX, outY], allowedTags=lstAllowed,
                 dbgSkips=dbgSkips)
             self.lstPatches += lstPatches
