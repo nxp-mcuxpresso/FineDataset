@@ -540,7 +540,7 @@ class MainAppLogic():
         self.ui.pgsBar.setValue(100)
         self.ui.tmrToHidePgsBar.start()
 if __name__ == '__main__':
-    QApplication.setAttribute(Qt.AA_DisableHighDpiScaling)
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()
     ui = widertools.Ui_MainWindow()
