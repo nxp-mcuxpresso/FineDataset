@@ -102,12 +102,17 @@ class VOCUtils(abstract_utils.AbstractUtils):
         self.dctCfg = {}
         self.isTarMode = True
         self.tarRoots = []
+
         minHvsW, maxHvsW = 0.1, 10.0
+        minGTPerImg, maxGTPerImg = 1, 50
         try:
             minHvsW = dctCfg['minHvsW']
             maxHvsW = dctCfg['maxHvsW']
+            minGTPerImg = dctCfg['minGTPerImg']
+            maxGTPerImg = dctCfg['maxGTPerImg']
         except:
             pass
+
         dctNewCfg = {
             'minHvsW' : minHvsW,
             'maxHvsW' : maxHvsW
@@ -130,7 +135,7 @@ class VOCUtils(abstract_utils.AbstractUtils):
                 if isinstance(an['object'],list) == False:
                     an['object'] = [an['object']]
                 lstBBoxes = self.ParseAnno(an, dctNewCfg)
-                if len(lstBBoxes) > 0:
+                if len(lstBBoxes) >= minGTPerImg and len(lstBBoxes) <= maxGTPerImg:
                     fileKey = path.splitext(path.split(sFile)[-1])[0]
                     self.dctFiles[fileKey] = {
                         'cnt0' : len(an['object']),
@@ -187,7 +192,10 @@ class VOCUtils(abstract_utils.AbstractUtils):
         t2 = time.time()
         dt = (t2 - t1)
         bkpt = 0
-        
+    
+    def IsSupportGTPerImg(self):
+        return True
+
     def MapFile(self, strFileKey:str):
         if self.isTarMode:
             ndx = int(strFileKey[:2])

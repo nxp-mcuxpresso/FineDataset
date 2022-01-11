@@ -22,6 +22,9 @@ class AbstractUtils(ABC):
     def DelTags(self, lstTags:list):
         return False
     
+    def IsSupportGTPerImg(self):
+        return False
+
     @abstractmethod
     def MapFile(self, strFile:str):
         return strFile

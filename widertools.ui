@@ -51,14 +51,16 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>140</y>
+      <y>170</y>
       <width>351</width>
       <height>141</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
      </font>
     </property>
     <property name="title">
@@ -69,17 +71,19 @@
       <rect>
        <x>180</x>
        <y>50</y>
-       <width>121</width>
+       <width>151</width>
        <height>16</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
-      <string>单张图最多物体数</string>
+      <string>合并到至少几个物体</string>
      </property>
     </widget>
     <widget class="QComboBox" name="cmbMaxFacesPerCluster">
@@ -87,13 +91,15 @@
       <rect>
        <x>180</x>
        <y>70</y>
-       <width>151</width>
+       <width>61</width>
        <height>21</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
     </widget>
@@ -109,6 +115,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -127,6 +135,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
@@ -145,6 +155,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -163,10 +175,12 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
-      <string>96</string>
+      <string>128</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="txtOutY">
@@ -181,6 +195,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
@@ -199,6 +215,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -217,6 +235,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
     </widget>
@@ -232,6 +252,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
     </widget>
@@ -247,6 +269,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
     </widget>
@@ -262,6 +286,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -280,6 +306,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -298,10 +326,35 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
       <string>W</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="chkAllowMoreObj">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>70</y>
+       <width>101</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>允许更多</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </widget>
@@ -329,7 +382,7 @@
       <x>1010</x>
       <y>0</y>
       <width>351</width>
-      <height>131</height>
+      <height>161</height>
      </rect>
     </property>
     <property name="font">
@@ -343,7 +396,7 @@
     <widget class="QLabel" name="label">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>0</x>
        <y>60</y>
        <width>31</width>
        <height>16</height>
@@ -385,6 +438,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
@@ -404,7 +459,7 @@
     <widget class="QLabel" name="label_13">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>0</x>
        <y>20</y>
        <width>37</width>
        <height>24</height>
@@ -432,6 +487,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -443,7 +500,7 @@
       <rect>
        <x>280</x>
        <y>20</y>
-       <width>51</width>
+       <width>61</width>
        <height>21</height>
       </rect>
      </property>
@@ -477,7 +534,7 @@
       <rect>
        <x>240</x>
        <y>60</y>
-       <width>91</width>
+       <width>101</width>
        <height>31</height>
       </rect>
      </property>
@@ -487,21 +544,23 @@
       </font>
      </property>
      <property name="text">
-      <string>保存原始标签</string>
+      <string>导出原标注</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="txtMinHvsW">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>220</x>
        <y>100</y>
-       <width>51</width>
-       <height>20</height>
+       <width>41</width>
+       <height>21</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -513,31 +572,35 @@
       <rect>
        <x>10</x>
        <y>100</y>
-       <width>91</width>
+       <width>161</width>
        <height>16</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
-      <string>边框最小高/宽</string>
+      <string>边框高/宽最小和最大</string>
      </property>
     </widget>
     <widget class="QLineEdit" name="txtMaxHvsW">
      <property name="geometry">
       <rect>
-       <x>280</x>
+       <x>270</x>
        <y>100</y>
-       <width>51</width>
-       <height>20</height>
+       <width>41</width>
+       <height>21</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -547,9 +610,9 @@
     <widget class="QLabel" name="label_8">
      <property name="geometry">
       <rect>
-       <x>180</x>
-       <y>100</y>
-       <width>91</width>
+       <x>10</x>
+       <y>130</y>
+       <width>181</width>
        <height>16</height>
       </rect>
      </property>
@@ -559,7 +622,43 @@
       </font>
      </property>
      <property name="text">
-      <string>边框最大高/宽</string>
+      <string>每张图中边框数最小和最大</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="txtMinGTPerImg">
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>130</y>
+       <width>41</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>1</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="txtMaxGTPerImg">
+     <property name="geometry">
+      <rect>
+       <x>270</x>
+       <y>130</y>
+       <width>41</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>50</string>
      </property>
     </widget>
    </widget>
@@ -567,14 +666,16 @@
     <property name="geometry">
      <rect>
       <x>1180</x>
-      <y>300</y>
+      <y>330</y>
       <width>181</width>
       <height>61</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
      </font>
     </property>
     <property name="title">
@@ -592,6 +693,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
@@ -610,6 +713,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
       </font>
      </property>
      <property name="text">
@@ -628,6 +733,8 @@
      <property name="font">
       <font>
        <pointsize>9</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
@@ -639,14 +746,14 @@
     <property name="geometry">
      <rect>
       <x>1180</x>
-      <y>370</y>
+      <y>400</y>
       <width>181</width>
       <height>61</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>9</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="title">
@@ -711,7 +818,7 @@
     <property name="geometry">
      <rect>
       <x>1260</x>
-      <y>470</y>
+      <y>500</y>
       <width>91</width>
       <height>31</height>
      </rect>
@@ -729,7 +836,7 @@
     <property name="geometry">
      <rect>
       <x>1100</x>
-      <y>470</y>
+      <y>500</y>
       <width>71</width>
       <height>31</height>
      </rect>
@@ -747,7 +854,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>290</y>
+      <y>320</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -755,6 +862,8 @@
     <property name="font">
      <font>
       <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
      </font>
     </property>
     <property name="text">
@@ -765,7 +874,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>470</y>
+      <y>500</y>
       <width>71</width>
       <height>31</height>
      </rect>
@@ -783,7 +892,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>310</y>
+      <y>340</y>
       <width>161</width>
       <height>151</height>
      </rect>
@@ -812,7 +921,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>510</y>
+      <y>540</y>
       <width>161</width>
       <height>31</height>
      </rect>

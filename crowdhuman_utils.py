@@ -1,6 +1,6 @@
 import os.path as path
 import json
-
+import abstract_utils
 import zipfile
 import io
 import random
@@ -10,8 +10,9 @@ def GetUtilClass():
     return CrowdHumanUtils
 def GetDSTypeName():
     return "Crowd Human"
-class CrowdHumanUtils():
+class CrowdHumanUtils(abstract_utils.AbstractUtils):
     def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callback=None, maxCnt=50000, isShuffle=True):
+        super(CrowdHumanUtils, self).__init__(dsFolder, setSel, dctCfg, callback, maxCnt, isShuffle)
         self.dctFiles = {}
         self.setSel = setSel
         self.dctFile2Zf = {}
@@ -22,10 +23,14 @@ class CrowdHumanUtils():
         self._unsureCnt = 0
         self._ignoreCnt = 0
         self._noHeadCnt = 0
-        minHvsW, maxHvsW = 1.0, 6.0
+
+        minHvsW, maxHvsW = 0.1, 10.0
+        minGTPerImg, maxGTPerImg = 1, 50
         try:
             minHvsW = dctCfg['minHvsW']
             maxHvsW = dctCfg['maxHvsW']
+            minGTPerImg = dctCfg['minGTPerImg']
+            maxGTPerImg = dctCfg['maxGTPerImg']
         except:
             pass
 
@@ -130,7 +135,7 @@ class CrowdHumanUtils():
                 lstPassed.append(dctItem)
             lstPassed.sort(key=lambda x: x['area'],reverse=True)
 
-            if len(lstPassed) > 0:
+            if len(lstPassed) >= minGTPerImg and len(lstPassed) <= maxGTPerImg:
                 self.dctFiles['Images/' + dctIn['ID'] + '.jpg'] = {
                     'cnt0' : len(dctIn['gtboxes']),
                     'cnt' : len(lstPassed),

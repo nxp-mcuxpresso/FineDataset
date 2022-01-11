@@ -288,8 +288,9 @@ class MainAppLogic():
             #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
             #self.ShowImage(table, ndx, strKey)
             self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
-            self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(strOutFolder, self.patchNdx, ndx=ndx, 
-                minCloseRate=minClose, maxObjPerCluster=maxObjPerCluster, 
+            self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(
+                strOutFolder, self.patchNdx, ndx=ndx, minCloseRate=minClose, maxObjPerCluster=maxObjPerCluster, 
+                isAllowMorePerPatch=mainUI.chkAllowMoreObj.isChecked(),
                 areaRateRange=[minAreaRate, maxAreaRate], outSize=[outX, outY], allowedTags=lstAllowed,
                 dbgSkips=dbgSkips)
             self.lstPatches += lstPatches
@@ -463,9 +464,25 @@ class MainAppLogic():
                 pass
         if len(lstNew) == 2 and lstNew[0] < lstNew[1]:
             lstHvsW_config = lstNew
+
+        minGTPerImg = 1
+        maxGTPerImg = 50
+        lstGTPerImgs = [1, 50]
+        lstNewCfg = [0,0]
+        for (i, txt) in enumerate([mainUI.txtMinGTPerImg.text(), mainUI.txtMaxGTPerImg.text()]):
+            try:
+                lstNewCfg[i] = int(txt)
+            except:
+                lstNewCfg[i] = lstGTPerImgs[i]
+        if lstNewCfg[0] == 0:
+            lstNewCfg[0] = 1
+        if lstNewCfg[0] <= lstNewCfg[1]:
+            lstGTPerImgs = lstNewCfg
         dctCfg = {
             'minHvsW' : lstHvsW_config[0],
-            'maxHvsW' : lstHvsW_config[1]
+            'maxHvsW' : lstHvsW_config[1],
+            'minGTPerImg': lstGTPerImgs[0],
+            'maxGTPerImg': lstGTPerImgs[1]
         }
 
         provider = None

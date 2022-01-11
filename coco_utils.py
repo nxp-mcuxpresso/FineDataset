@@ -32,10 +32,15 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
         self.dctTagToWholeTag = dict()
         self.dctTags = dict()
 
-        minHvsW, maxHvsW = 1.0/6.0, 6.0
+        minHvsW, maxHvsW = 0.1, 10.0
+        minGTPerImg, maxGTPerImg = 1, 50
         try:
             minHvsW = dctCfg['minHvsW']
             maxHvsW = dctCfg['maxHvsW']
+            # coco格式是每个标注作为一个单元，在遍历全部标注前不保证能算出一个图有多少个GT
+            # 标注出现的顺序并不是某种图片的排列顺序。
+            minGTPerImg = dctCfg['minGTPerImg']
+            maxGTPerImg = dctCfg['maxGTPerImg']
         except:
             pass
 
@@ -166,10 +171,11 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
                     self.dctTags[tag] = 1
                 
                 if imgKey in self.dctFiles:
-                    item = self.dctFiles[imgKey]
-                    item['cnt'] += 1
-                    item['cnt0'] += 1
-                    item['xywhs'].append(dctItem)
+                    if item['cnt'] < maxGTPerImg:
+                        item = self.dctFiles[imgKey]
+                        item['cnt'] += 1
+                        item['cnt0'] += 1
+                        item['xywhs'].append(dctItem)
                 else:
                     self.dctFiles[imgKey] = {
                         'cnt': 1,

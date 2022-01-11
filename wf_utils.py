@@ -17,12 +17,17 @@ class WFUtils(abstract_utils.AbstractUtils):
         st = STATE_WANT_FILENAME
         bboxRem = 0
         lstBBoxes = []
+
         minHvsW, maxHvsW = 0.1, 10.0
+        minGTPerImg, maxGTPerImg = 1, 50
         try:
             minHvsW = dctCfg['minHvsW']
             maxHvsW = dctCfg['maxHvsW']
+            minGTPerImg = dctCfg['minGTPerImg']
+            maxGTPerImg = dctCfg['maxGTPerImg']
         except:
             pass
+        
         def default_callback(pgs, msg, in_callback):
             print(pgs, msg)
             if in_callback is not None:
@@ -68,12 +73,12 @@ class WFUtils(abstract_utils.AbstractUtils):
                         if lstVals[2] * lstVals[3] >= 36*36 and lstVals[2] != 0:
                             hVsW = lstVals[3] / lstVals[2]
                             if hVsW >= minHvsW and hVsW <= maxHvsW:
-                                lstBBoxes.append(dctItem)
-                                self.dctTags['face'] += 1
+                                lstBBoxes.append(dctItem)                                
                     bboxRem -= 1
                     if bboxRem == 0:
                         st = STATE_WANT_FILENAME
-                        if len(lstBBoxes) > 0:
+                        if len(lstBBoxes) >= minGTPerImg and len(lstBBoxes) <= maxGTPerImg :
+                            self.dctTags['face'] += len(lstBBoxes)
                             self.dctFiles[fileKey] = {
                                 'cnt0' : nBBoxCnt,
                                 'cnt' : len(lstBBoxes),

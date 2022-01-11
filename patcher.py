@@ -357,8 +357,8 @@ class Patcher():
     CutPatches: 切割出包含一簇人脸的图片
     '''
     def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[1.00, 0.8], outSize = [96, 128], \
-            ndx=-1, strFile='', maxObjPerCluster=10, minCloseRate=0.333, areaRateRange=[0,1], 
-            maxPatchPerImg=30, allowedTags=['*'], dbgSkips=[]):
+            ndx=-1, strFile='', maxObjPerCluster=10, isAllowMorePerPatch=True, 
+            minCloseRate=0.333, areaRateRange=[0,1], maxPatchPerImg=30, allowedTags=['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
         wVsH = outSize[0] / outSize[1]
@@ -474,7 +474,10 @@ class Patcher():
                 lstBBxyxys = []
                 areaIJ = 0
                 areaO = w2 * h2
-                for subBox in item['xywhs']: #pat[0]:
+                boxCnt = 0
+                for subBox in item['xywhs']:
+                    if not isAllowMorePerPatch and boxCnt >= len(pat[0]):
+                        break
                     # 去除经过剪裁后已经位于外面的物体框
                     ptx1 = subBox['x1'] - x12
                     pty1 = subBox['y1'] - y12
@@ -492,6 +495,9 @@ class Patcher():
                     [pty1, pty2] = [int(x * outSize[1] / h2 + 0.5) for x in [pty1, pty2]]
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
                     lstBBxyxys.append([ptx1, pty1, ptx2, pty2, subBox['tag']])
+                    boxCnt += 1
+                if not isAllowMorePerPatch and boxCnt > len(pat[0]):
+                    continue
                 closeRate = areaIJ / areaO
                 if closeRate < minCloseRate * self.lstCloseDecay[len(pat[0])]:
                     newSkipNotCloseCnt = len(pat[0])
@@ -500,7 +506,7 @@ class Patcher():
                 skipOutBoundCnt += newSkipOutBoundCnt
                 if len(lstBBxyxys) > 0:
                     img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
-                    img = cv2.resize(img,(outSize[0], outSize[1]), interpolation=cv2.INTER_LINEAR)                    
+                    img = cv2.resize(img,(outSize[0], outSize[1]), interpolation=cv2.INTER_LINEAR)
                     cv2.imwrite('./outs/' + sOutFileName[2:], img)
                     dct['xyxys'] = lstBBxyxys
                     patchNdx += 1
