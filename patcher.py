@@ -6,7 +6,7 @@ import os
 import math
 import json
 import random
-import abstract_utils
+import plugins_dsread.abstract_utils as abstract_utils
 import traceback
 from numpy.lib.type_check import isreal
 def DelTree(treeName, isDelDir=False, isDelRoot=False):

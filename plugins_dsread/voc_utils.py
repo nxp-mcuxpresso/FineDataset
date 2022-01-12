@@ -7,7 +7,10 @@ import xmltodict
 import xml.dom.minidom
 import traceback
 import time
-import abstract_utils
+try:
+    import abstract_utils
+except:
+    import plugins_dsread.abstract_utils as abstract_utils
 def GetDSTypeName():
     return "VOC"
 

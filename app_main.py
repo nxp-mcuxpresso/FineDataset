@@ -12,9 +12,7 @@ import numpy as np
 import widerface2voc as w2v
 import time
 import shutil
-import wf_utils
-import crowdhuman_utils as ch_utils
-import voc_utils
+import importlib
 from patcher import DelTree
 import patcher
 import glob
@@ -34,10 +32,12 @@ class MainAppLogic():
         self.rndNdx = 2305
         self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
         # 搜索 xxx_utils.py
-        lstTypes = [x[:-3] for x in glob.glob('*_utils.py')]
+        lstTypes = [x[2:-3] for x in glob.glob('./plugins_dsread/*_utils.py')]
+        lstTypes = [x.replace('\\', '.') for x in lstTypes]
+        lstTypes = [x.replace('/', '.') for x in lstTypes]        
         pluginCnt = 0
         for plugin in lstTypes:
-            a = __import__(plugin)
+            a = importlib.import_module(plugin)
             dsType = a.GetDSTypeName()
             dsCls = a.GetUtilClass()
             if dsType is None:
@@ -497,15 +497,7 @@ class MainAppLogic():
         try:
             setSel = self.ui.cmbSubSet.currentText()
             provider = self.dctPlugins[dsType](dsFolder, setSel, dctCfg, callback)
-            if False:
-                if dsType == 'wider_face':
-                    provider = wf_utils.WFUtils(dsFolder, setSel, dctCfg, callback)
-                elif dsType == 'crowd_human':
-                    provider = ch_utils.CrowdHumanUtils(dsFolder, setSel, dctCfg, callback)
-                elif dsType == 'voc':
-                    provider = voc_utils.VOCUtils(dsFolder, setSel, dctCfg, callback)
-                elif dsType == 'coco':
-                    pass
+
         except Exception as e:
             print(e)
             self.ui.statusBar.showMessage('代码错误：\n' + str(e))

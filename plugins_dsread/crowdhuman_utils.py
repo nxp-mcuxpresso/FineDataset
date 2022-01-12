@@ -1,6 +1,9 @@
 import os.path as path
 import json
-import abstract_utils
+try:
+    import abstract_utils
+except:
+    import plugins_dsread.abstract_utils as abstract_utils
 import zipfile
 import io
 import random
@@ -130,8 +133,8 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
             # 删除面积过小的
             lstPassed = []
             for dctItem in lstBBoxes:
-                if dctItem['area'] * 3 < areaAverage or dctItem['area'] > areaAverage * 3:
-                    continue
+                #if dctItem['area'] * 3 < areaAverage or dctItem['area'] > areaAverage * 3:
+                #    continue
                 lstPassed.append(dctItem)
             lstPassed.sort(key=lambda x: x['area'],reverse=True)
 
