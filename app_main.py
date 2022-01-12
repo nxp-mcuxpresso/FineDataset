@@ -124,7 +124,7 @@ class MainAppLogic():
         ndx, isOK = QInputDialog.getInt(MainWindow, '设置当前图片索引', '请输入索引：', min = 0) 
         if isOK:
             try:
-                [table, strKey, ndx] = self.dataObj.ShowAt(ndx, False, allowedTags=self.GetAllowedTags())
+                [table, strKey, _,  ndx] = self.dataObj.ShowAt(ndx, False, allowedTags=self.GetAllowedTags())
                 self.ui.statusBar.showMessage('显示指定编号%d, 图片%s' % (ndx, strKey))
                 self.ShowImage(table, strKey)        
                 self.rndNdx = ndx
@@ -188,7 +188,7 @@ class MainAppLogic():
         self.ui.statusBar.showMessage('已保存到%s' % sOutFile, 5000)
 
     def OnClicked_Random(self):
-        [table, strKey, ndx] = self.dataObj.ShowRandom(False, allowedTags=self.GetAllowedTags())
+        [table, strKey, _, ndx] = self.dataObj.ShowRandom(False, allowedTags=self.GetAllowedTags())
         self.rndNdx = ndx
         self.ui.statusBar.showMessage('随机显示编号%d, 图片%s' % (ndx, strKey))
         self.ShowImage(table, strKey)
@@ -269,8 +269,8 @@ class MainAppLogic():
         strOutFolder = './outs/out_%s_multi' % (self.ui.cmbSubSet.currentText())
         strOutFolder = self.GetNextFreeFolder(strOutFolder)
         self.strOutFolder = strOutFolder
-        outX = int(self.ui.txtOutX.text())
-        outY = int(self.ui.txtOutY.text())        
+        outW = int(self.ui.txtOutX.text())
+        outH = int(self.ui.txtOutY.text())        
         self.patchNdx = 0
         self.lstPatches = []
         self.ui.pgsBar.setValue(1)
@@ -296,7 +296,7 @@ class MainAppLogic():
             self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(
                 strOutFolder, self.patchNdx, ndx=ndx, minCloseRate=minClose, maxObjPerCluster=maxObjPerCluster, 
                 isAllowMorePerPatch=mainUI.chkAllowMoreObj.isChecked(), maxPatchPerImg=maxPatchPerImg,
-                areaRateRange=[minAreaRate, maxAreaRate], outSize=[outX, outY], allowedTags=lstAllowed,
+                areaRateRange=[minAreaRate, maxAreaRate], outWH=[outW, outH], allowedTags=lstAllowed,
                 dbgSkips=dbgSkips)
             self.lstPatches += lstPatches
             if self.patchNdx >= dsSize:
@@ -349,7 +349,7 @@ class MainAppLogic():
             #self.ShowImage(table, ndx, strKey)            
             self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
             self.patchNdx, lstPatches = self.dataObj.CutPatches(
-                strOutFolder, self.patchNdx, ndx=ndx, outSize=[outX, outY], 
+                strOutFolder, self.patchNdx, ndx=ndx, outWH=[outX, outY], 
                 areaRateRange=[minAreaRate, maxAreaRate], allowedTags=lstAllowed,
                 dbgSkips=dbgSkips)
             self.lstPatches += lstPatches
@@ -374,6 +374,9 @@ class MainAppLogic():
     def OnClicked_ValidateDataset(self, strSel='single'):
         strOutFolder = './outs/out_%s_%s' % (self.ui.cmbSubSet.currentText(), strSel)
         table, ndx, item = self.dataObj.ShowRandomValidate(strOutFolder)
+        if table is None:
+            self.ui.statusBar.showMessage('未找到制作的数据集')
+            return
         c = table.shape
         qImg = QtGui.QImage(bytearray(table), c[1], c[0], c[1]*3, QtGui.QImage.Format_BGR888)
         pix = QPixmap(QPixmap.fromImage(qImg))
@@ -400,10 +403,10 @@ class MainAppLogic():
     def OnClicked_OriImage(self):
         if len(self.oriImage) > 0:
             try:
-                [table, strKey] = self.dataObj.ShowImageFile(self.oriImage, False, allowedTags=self.GetAllowedTags())
+                [table, strKey, _] = self.dataObj.ShowImageFile(self.oriImage, False, allowedTags=self.GetAllowedTags())
                 self.ShowImage(table, strKey)        
             except:
-                self.ui.statusBar.showMessage('未找到图片 %s' % (strKey)) 
+                self.ui.statusBar.showMessage('未找到图片') 
 
     def OnClicked_TagSelAll(self):
         for item in self.chkTags:

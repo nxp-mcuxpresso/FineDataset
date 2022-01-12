@@ -237,6 +237,7 @@ class Patcher():
                     }
                     lstPairs.append([[b1, b2], (x1o, y1o), (x2o, y2o), dctBbox, areaIJ, closeRate, [i, j]])
         lstPairs.sort(key=lambda x: x[5], reverse=True)
+        lstTrints = []
         lstNewPairs = lstPairs # lstNewPairs后面存储没有被合并到三元组的对子
         lstNewTrints = []  # lstNewTrints 后面存储没有被合并到多元组的三元组
         lstMulti = []
@@ -245,7 +246,7 @@ class Patcher():
             # 再获取靠近的三元组
             if len(lstPairs) > maxPairs:
                 lstPairs = lstPairs[:maxPairs]
-            lstTrints = []
+            
             lstNewPairs = []
             setIDs = set()
             for i in range(len(lstPairs)):
@@ -359,12 +360,12 @@ class Patcher():
     '''
     CutPatches: 切割出包含一簇人脸的图片
     '''
-    def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[1.00, 0.8], outSize = [96, 128], \
+    def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[1.00, 0.8], outWH = [96, 128], \
             ndx=-1, strFile='', maxObjPerCluster=10, isAllowMorePerPatch=True, 
             minCloseRate=0.333, areaRateRange=[0,1], maxPatchPerImg=25, allowedTags=['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
-        wVsH = outSize[0] / outSize[1]
+        wVsH = outWH[0] / outWH[1]
         lstRet, img = self.GetClusters(ndx, isShow=False, minClose=minCloseRate, maxObjPerCluster=maxObjPerCluster, outWvsH=wVsH, allowedTags=allowedTags)
         if maxObjPerCluster < 3:
             lstOriPats = lstRet[0]
@@ -449,15 +450,15 @@ class Patcher():
                 return cx, cy, w, h, x12, y12, x22, y22, w2, h2             
             
             bbox = pat[3]
-            scaler = 0.95
                        
             aspectErr = bbox['w']/ bbox['h'] / wVsH
             if aspectErr > 5.0 or aspectErr < 0.2:
                 skipBadAspectCnt += len(pat[0])
                 continue
-
-            rand_clip_retry = 10
-            for retryNdx in range(rand_clip_retry):
+            # 留下比较大margin的scaler多试几次，每次都有随机性
+            scalers = [0.7]*6 + [0.9]*3 + [1]
+            for scaler in scalers:
+                
                 newSkipBadSizeCnt = 0
                 newSkipOutBoundCnt = 0
                 newSkipNotCloseCnt = 0
@@ -470,7 +471,14 @@ class Patcher():
                     # 若扩大子块后导致它超过原图的边界，则老实地剪切子块中超出的部分
                     cx, cy, w, h, x12,y12,x22,y22,w2,h2 = _GetXYXY(bbox, image.width, image.height, scaler, wVsH, False)
                 # 上面的操作导致需要重新计算closeRate
-
+                
+                # 跳过太小的图像
+                if w2 < 25 or h2 < 25:
+                    newSkipBadSizeCnt += len(pat[0])
+                    break
+                
+                # x12, y12 表示子块在原图的左上角坐标
+                # x22, y22 表示子块在原图的右下角坐标
                 cropped = image.crop((x12, y12, x22, y22))
 
                 sOutFileName = '%s/%s_%05d_%d.png' % ('.' + strOutFolder[6:], sMainName, patchNdx, int(scaler * 100))
@@ -486,20 +494,46 @@ class Patcher():
                         if '*' != allowedTags[0]:
                             continue                    
                     # 去除经过剪裁后已经位于外面的物体框
+                    gtW = subBox['w']
+                    gtH = subBox['h']
                     ptx1 = subBox['x1'] - x12
                     pty1 = subBox['y1'] - y12
-                    ptx2 = ptx1 + subBox['w']
-                    pty2 = pty1 + subBox['h']
-                    if ptx1 < 0 or pty1 < 0 or ptx2 >= w2 or pty2 >= h2:
+                    ptx2 = ptx1 + gtW
+                    pty2 = pty1 + gtH
+                    clipW = gtW
+                    clipH = gtH
+                    if ptx1 >= w2 or pty1 >= h2 or ptx2 < 0 or pty2 < 0:
                         newSkipOutBoundCnt += 1 
                         continue
-                    areaRate = subBox['w'] * subBox['h'] / w2 / h2
+                    if ptx1 < 0 or pty1 < 0 or ptx2 >= w2 or pty2 >= h2:
+                        # 检查出界程度
+                        if ptx1 < 0:
+                            clipW = gtW + ptx1
+                            ptx1 = 0
+                        if pty1 < 0:
+                            clipH = gtH + pty1
+                            pty1 = 0
+                        if ptx2 >= w2:
+                            clipW = gtW - (ptx2 + 1 - w2)
+                            ptx2 = w2 - 1
+                        if pty2 >= h2:
+                            clipH = gtH - (pty2 + 1 - h2)
+                            pty2 = h2 - 1
+                            
+                        if clipW * clipH / gtW / gtH < 0.5:
+                            newSkipOutBoundCnt += 1 
+                            continue
+                    areaRate = clipW * clipH / w2 / h2
                     if areaRate < areaRateRange[0] or areaRate > areaRateRange[1]:
                         newSkipBadSizeCnt += 1
                         continue
-                    areaIJ += subBox['w'] * subBox['h']
-                    [ptx1, ptx2] = [int(x * outSize[0] / w2 + 0.5) for x in [ptx1, ptx2]]
-                    [pty1, pty2] = [int(x * outSize[1] / h2 + 0.5) for x in [pty1, pty2]]
+                    areaIJ += clipW * clipH
+                    [ptx1, ptx2] = [int(x * outWH[0] / w2 + 0.5) for x in [ptx1, ptx2]]
+                    [pty1, pty2] = [int(x * outWH[1] / h2 + 0.5) for x in [pty1, pty2]]
+                    if ptx2 >= outWH[0]:
+                        ptx2 = outWH[0] - 1
+                    if pty2 >= outWH[1]:
+                        pty2 = outWH[1] - 1
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
                     lstBBxyxys.append([ptx1, pty1, ptx2, pty2, subBox['tag']])
                     boxCnt += 1
@@ -513,7 +547,7 @@ class Patcher():
                 skipOutBoundCnt += newSkipOutBoundCnt
                 if len(lstBBxyxys) > 0:
                     img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
-                    img = cv2.resize(img,(outSize[0], outSize[1]), interpolation=cv2.INTER_LINEAR)
+                    img = cv2.resize(img,(outWH[0], outWH[1]), interpolation=cv2.INTER_LINEAR)
                     cv2.imwrite('./outs/' + sOutFileName[2:], img)
                     dct['xyxys'] = lstBBxyxys
                     patchNdx += 1
@@ -535,7 +569,7 @@ class Patcher():
     '''
     CutPatches: 切割出只包含一个人脸GT框的图片
     '''
-    def CutPatches(self, strOutFolder, patchNdx, scalers=[0.8, 0.6, 0.45], areaRateRange=[0, 1], outSize = [96,128], ndx=-1, strFile='', \
+    def CutPatches(self, strOutFolder, patchNdx, scalers=[0.8, 0.6, 0.45], areaRateRange=[0, 1], outWH = [96,128], ndx=-1, strFile='', \
         maxPatchPerImg=32, allowedTags = ['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
@@ -546,7 +580,7 @@ class Patcher():
         sMainName = os.path.splitext(os.path.split(strFile)[1])[0]
         image = Image.open(self.provider.MapFile(strFile))
         
-        wVsH = outSize[0] / outSize[1]
+        wVsH = outWH[0] / outWH[1]
         lstXYWH = item['xywhs'].copy()
         skipOutBoundCnt = 0
         skipBadSizeCnt = 0
@@ -619,10 +653,10 @@ class Patcher():
                     
                     sOutFileName = '%s/%s_%05d_%d.png' % (strOutFolder, sMainName, patchNdx, int(scaler * 100))
                  
-                    img = cv2.resize(img,(outSize[0], outSize[1]), interpolation=cv2.INTER_LINEAR)
-                    resizeRatio = outSize[0] / w2
-                    [ptx1, ptx2] = [int(x * outSize[0] / w2 + 0.5) for x in [ptx1, ptx2]]
-                    [pty1, pty2] = [int(x * outSize[1] / h2 + 0.5) for x in [pty1, pty2]]
+                    img = cv2.resize(img,(outWH[0], outWH[1]), interpolation=cv2.INTER_LINEAR)
+                    resizeRatio = outWH[0] / w2
+                    [ptx1, ptx2] = [int(x * outWH[0] / w2 + 0.5) for x in [ptx1, ptx2]]
+                    [pty1, pty2] = [int(x * outWH[1] / h2 + 0.5) for x in [pty1, pty2]]
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
                     cv2.imwrite(sOutFileName, img)
                     dct = {
@@ -646,8 +680,10 @@ class Patcher():
         imgWH = (image.width, image.height)
         width = 1 if imgWH[0] < 480 else 2
         img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
+        drawedCnt = 0
         for (i, bbox) in enumerate(item['xywhs']):
             if allowedTags[0] == '*' or bbox['tag'] in allowedTags:
+                drawedCnt += 1
                 pt1 = (bbox['x1'], bbox['y1'])
                 pt2 = (bbox['x1'] + bbox['w'] , bbox['y1'] + bbox['h'])
                 col = (bbox['isOverIllumination'] * 255,191,bbox['occlusion'] * 255)
@@ -658,22 +694,28 @@ class Patcher():
         if isShow:
             cv2.imshow("OpenCV",img)
             cv2.waitKey()
-        return [np.array(img), fileKey]
+        return [np.array(img), fileKey, drawedCnt]
 
     def ShowImage(self, ndx, isShow, allowedTags = ['*']):
         strFile = list(self.dctFiles.keys())[ndx]
         ret = self.ShowImageFile(strFile, isShow, allowedTags)
         return ret + [ndx]
     def ShowRandom(self, isShow=True, allowedTags = ['*']):
-        ndx = np.random.randint(len(self.dctFiles))
-        return self.ShowImage(ndx, isShow, allowedTags)
-
+        while True:
+            ndx = np.random.randint(len(self.dctFiles))
+            lstRet = self.ShowImage(ndx, isShow, allowedTags)
+            if lstRet[2] > 0:
+                break
+        return lstRet
     def ShowAt(self, ndx, isShow=True, allowedTags = ['*']):
         return self.ShowImage(ndx, isShow, allowedTags)
 
     def ShowRandomValidate(self, strOutFolder):
-        with open("%s/bboxes.json" % (strOutFolder)) as fd:
-            lst = json.load(fd)
+        try:
+            with open("%s/bboxes.json" % (strOutFolder)) as fd:
+                lst = json.load(fd)
+        except:
+            return None, -1, None
         cnt = len(lst)
         ndx = np.random.randint(cnt)
         item = lst[ndx]

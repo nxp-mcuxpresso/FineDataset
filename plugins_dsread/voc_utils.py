@@ -88,7 +88,8 @@ class VOCUtils(abstract_utils.AbstractUtils):
                         dctItem[optionalKeyMap[i]] = int(obj[optionalKey])
                 except:
                     pass
-            lstXywhs.append(dctItem)
+            if True: #dctItem['occlusion'] == 0:
+                lstXywhs.append(dctItem)
         return lstXywhs
 
     def __init__(self, dsFolder = '.', setSel='train', dctCfg={}, callback=None):
