@@ -72,8 +72,8 @@ class WFUtils(abstract_utils.AbstractUtils):
                         'isInvalid' : lstVals[7],
                     }
 
-                    if dctItem['isInvalid'] == 0 and dctItem['blur'] < 2 and dctItem['pose'] == 0 and dctItem['occlusion'] < 1:
-                        if lstVals[2] * lstVals[3] >= 36*36 and lstVals[2] != 0:
+                    if dctItem['isInvalid'] == 0 and dctItem['blur'] < 2:# and dctItem['pose'] == 0 and dctItem['occlusion'] < 1:
+                        if lstVals[2] * lstVals[3] >= 16*16 and lstVals[2] != 0:
                             hVsW = lstVals[3] / lstVals[2]
                             if hVsW >= minHvsW and hVsW <= maxHvsW:
                                 lstBBoxes.append(dctItem)                                

@@ -27,6 +27,48 @@ def DelTree(treeName, isDelDir=False, isDelRoot=False):
     if isDelDir == True and isDelRoot == True:
         os.rmdir(treeName)
 
+def XYXY_CalcIoU(xyxy1, xyxy2):
+    x1i,y1i,x2i,y2i= xyxy1[0],xyxy1[1],xyxy1[2],xyxy1[3]
+    x1j,y1j,x2j,y2j= xyxy2[0],xyxy2[1],xyxy2[2],xyxy2[3]
+
+    x1o = x1i if x1i < x1j else x1j
+    y1o = y1i if y1i < y1j else y1j
+    x2o = x2i if x2i > x2j else x2j
+    y2o = y2i if y2i > y2j else y2j
+    # 相交区
+    x1It = x1i if x1i > x1j else x1j
+    y1It = y1i if y1i > y1j else y1j
+    x2It = x2i if x2i < x2j else x2j
+    y2It = y2i if y2i < y2j else y2j
+    if x1It >= x2It or y1It >= y2It:
+        # 不相交的两个框
+        iou = 0
+    else:
+        itArea = (x2It - x1It) * (y2It - y1It)
+        unArea = (x2o - x1o) * (y2o - y1o)
+        iou = itArea / unArea                        
+    return iou
+
+def XYXY_CalcIoU_indep(x1i,y1i,x2i,y2i,x1j,y1j,x2j,y2j):
+
+    x1o = x1i if x1i < x1j else x1j
+    y1o = y1i if y1i < y1j else y1j
+    x2o = x2i if x2i > x2j else x2j
+    y2o = y2i if y2i > y2j else y2j
+    # 相交区
+    x1It = x1i if x1i > x1j else x1j
+    y1It = y1i if y1i > y1j else y1j
+    x2It = x2i if x2i < x2j else x2j
+    y2It = y2i if y2i < y2j else y2j
+    if x1It >= x2It or y1It >= y2It:
+        # 不相交的两个框
+        iou = 0
+    else:
+        itArea = (x2It - x1It) * (y2It - y1It)
+        unArea = (x2o - x1o) * (y2o - y1o)
+        iou = itArea / unArea                        
+    return iou    
+
 class Patcher():
     def __init__(self, provider:abstract_utils.AbstractUtils):
         '''
@@ -113,6 +155,48 @@ class Patcher():
                 delCnt = 0
             return lstLeft
 
+        def XYXY_CalcIoU(xyxy1, xyxy2):
+            x1i,y1i,x2i,y2i= xyxy1[0],xyxy1[1],xyxy1[2],xyxy1[3]
+            x1j,y1j,x2j,y2j= xyxy2[0],xyxy2[1],xyxy2[2],xyxy2[3]
+
+            x1o = x1i if x1i < x1j else x1j
+            y1o = y1i if y1i < y1j else y1j
+            x2o = x2i if x2i > x2j else x2j
+            y2o = y2i if y2i > y2j else y2j
+            # 相交区
+            x1It = x1i if x1i > x1j else x1j
+            y1It = y1i if y1i > y1j else y1j
+            x2It = x2i if x2i < x2j else x2j
+            y2It = y2i if y2i < y2j else y2j
+            if x1It >= x2It or y1It >= y2It:
+                # 不相交的两个框
+                iou = 0
+            else:
+                itArea = (x2It - x1It) * (y2It - y1It)
+                unArea = (x2o - x1o) * (y2o - y1o)
+                iou = itArea / unArea                        
+            return iou
+
+        def XYXY_CalcIoU_indep(x1i,y1i,x2i,y2i,x1j,y1j,x2j,y2j):
+
+            x1o = x1i if x1i < x1j else x1j
+            y1o = y1i if y1i < y1j else y1j
+            x2o = x2i if x2i > x2j else x2j
+            y2o = y2i if y2i > y2j else y2j
+            # 相交区
+            x1It = x1i if x1i > x1j else x1j
+            y1It = y1i if y1i > y1j else y1j
+            x2It = x2i if x2i < x2j else x2j
+            y2It = y2i if y2i < y2j else y2j
+            if x1It >= x2It or y1It >= y2It:
+                # 不相交的两个框
+                iou = 0
+            else:
+                itArea = (x2It - x1It) * (y2It - y1It)
+                unArea = (x2o - x1o) * (y2o - y1o)
+                iou = itArea / unArea                        
+            return iou            
+
         def _multiMerge(lstIn:list, maxObjPerCluster, minClsoeRate, outWvsH, lstCloseDecay):
             lstMulti = []
             lstLeft = []
@@ -128,23 +212,7 @@ class Patcher():
                     
                         b2 = lstIn[j][3]
                         wj, hj, x1j, y1j, x2j, y2j, cxj, cyj, sqrtAj = _getValues(b2)
-
-                        x1o = x1i if x1i < x1j else x1j
-                        y1o = y1i if y1i < y1j else y1j
-                        x2o = x2i if x2i > x2j else x2j
-                        y2o = y2i if y2i > y2j else y2j
-                        # 相交区
-                        x1It = x1i if x1i > x1j else x1j
-                        y1It = y1i if y1i > y1j else y1j
-                        x2It = x2i if x2i < x2j else x2j
-                        y2It = y2i if y2i < y2j else y2j
-                        if x1It >= x2It or y1It >= y2It:
-                            # 不相交的两个框
-                            iou = 0
-                        else:
-                            itArea = (x2It - x1It) * (y2It - y1It)
-                            unArea = (x2o - x1o) * (y2o - y1o)
-                            iou = itArea / unArea
+                        iou = XYXY_CalcIoU_indep(x1i,y1i,x2i,y2i,x1j,y1j,x2j,y2j)
                         if iou < 0.05:
                             continue
                         dctBbox = {
@@ -227,8 +295,8 @@ class Patcher():
                 closeRate = areaIJ / areaO
                 wVSh = wo / ho
                 aspectErr = wVSh / outWvsH if wVSh > outWvsH else outWvsH / wVSh
-
-                if closeRate / aspectErr >= minClose:
+                # 当仅做2个的聚类时，closeRate在后面的步骤中处理
+                if maxObjPerCluster == 2 or closeRate / aspectErr >= minClose:
                     dctBbox = {
                         'x1' : x1o,
                         'y1' : y1o,
@@ -396,8 +464,9 @@ class Patcher():
         strFile = list(self.dctFiles.keys())[ndx]
         item = self.dctFiles[strFile]
         bboxCnt = len(item['xywhs'])
-
-        for (i, pat) in enumerate(lstOriPats):
+        lstOut4Filter = []
+        gtUsedCnts = np.zeros(len(item['xywhs']))
+        for (ip, pat) in enumerate(lstOriPats):
             totalCnt += len(pat[0])
             if len(pat[0]) > maxObjPerCluster:
                 skipTooDenseCnt += len(pat[0])
@@ -405,7 +474,7 @@ class Patcher():
             if newPatchCnt >= maxPatchPerImg:
                 skipTooManyCnt += len(pat[0])
                 continue
-            
+
             def _GetXYXY(xywh, wMax, hMax, scaler, wVsH, isAdaptiveExpand=True):
                 w  = xywh['w']
                 h = xywh['h']
@@ -460,6 +529,7 @@ class Patcher():
                 continue
             # 留下比较大margin的scaler多试几次，每次都有随机性
             scalers = [0.8]*6 + [0.9]*3 + [1]
+            outOriNdc = []
             for scaler in scalers:
                 
                 newSkipBadSizeCnt = 0
@@ -483,6 +553,8 @@ class Patcher():
                 # x12, y12 表示子块在原图的左上角坐标
                 # x22, y22 表示子块在原图的右下角坐标
                 cropped = image.crop((x12, y12, x22, y22))
+                outXYXY = [x12, y12, x22, y22]
+                
 
                 sOutFileName = '%s/%s_%05d_%d.png' % ('.' + strOutFolder[6:], sMainName, patchNdx, int(scaler * 100))
                 dct = {'filename' : sOutFileName}
@@ -490,7 +562,8 @@ class Patcher():
                 areaIJ = 0
                 areaO = w2 * h2
                 boxCnt = 0
-                for subBox in item['xywhs']:
+                gtNewUsedCnts = np.zeros(len(item['xywhs']))
+                for (i, subBox) in enumerate(item['xywhs']):
                     if not isAllowMorePerPatch and boxCnt >= len(pat[0]):
                         break
                     if not subBox['tag'] in allowedTags:
@@ -538,17 +611,44 @@ class Patcher():
                     if pty2 >= outWH[1]:
                         pty2 = outWH[1] - 1
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
+                    
+                    # 每个GT框最多使用3次
+                    if gtUsedCnts[i] >= 3:
+                        lstBBxyxys = []
+                        gtNewUsedCnts = 0
+                        break
+                    gtNewUsedCnts[i] = 1        
                     lstBBxyxys.append([ptx1, pty1, ptx2, pty2, subBox['tag']])
                     boxCnt += 1
+                    outOriNdc.append(i)
                 if not isAllowMorePerPatch and boxCnt > len(pat[0]):
                     continue
                 closeRate = areaIJ / areaO
                 if closeRate < minCloseRate * self.lstCloseDecay[len(pat[0])]:
                     newSkipNotCloseCnt = len(pat[0])
                     continue
+                
                 skipBadSizeCnt += newSkipBadSizeCnt
                 skipOutBoundCnt += newSkipOutBoundCnt
                 if len(lstBBxyxys) > 0:
+                    # 检查和基于本张图的现有子块是否过于重叠
+                    isReject = False                    
+                    for j, outChk in enumerate(lstOut4Filter):
+                        iou = XYXY_CalcIoU(outChk[0], outXYXY)
+                        if iou >=0.5:
+                            set1, set2 = set(outOriNdc), set(outChk[1])
+                            if set1 == set2:
+                                isReject = True
+                                break
+                            else:
+                                un = set1.union(set2)
+                                it = set1.intersection(set2)
+                                if len(it) / len(un) >= 0.8:
+                                    isReject = True
+                                break
+                    if isReject == True:
+                        continue
+                    gtUsedCnts += gtNewUsedCnts
                     img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
                     img = cv2.resize(img,(outWH[0], outWH[1]), interpolation=cv2.INTER_LINEAR)
                     cv2.imwrite('./outs/' + sOutFileName[2:], img)
@@ -556,6 +656,7 @@ class Patcher():
                     patchNdx += 1
                     newPatchCnt += 1
                     lstPatches.append(dct)
+                    lstOut4Filter.append([outXYXY, outOriNdc])
                 break
             skipNotCloseCnt += newSkipNotCloseCnt
 
