@@ -409,6 +409,9 @@ class Patcher():
             def _GetXYXY(xywh, wMax, hMax, scaler, wVsH, isAdaptiveExpand=True):
                 w  = xywh['w']
                 h = xywh['h']
+                allowed_scaler = max(scaler, max(w/wMax, h/hMax))
+                if scaler < allowed_scaler:
+                    scaler = allowed_scaler
                 x1 = xywh['x1']
                 y1 = xywh['y1']
                 cx = x1 + w // 2
@@ -456,7 +459,7 @@ class Patcher():
                 skipBadAspectCnt += len(pat[0])
                 continue
             # 留下比较大margin的scaler多试几次，每次都有随机性
-            scalers = [0.7]*6 + [0.9]*3 + [1]
+            scalers = [0.8]*6 + [0.9]*3 + [1]
             for scaler in scalers:
                 
                 newSkipBadSizeCnt = 0
@@ -717,6 +720,8 @@ class Patcher():
         except:
             return None, -1, None
         cnt = len(lst)
+        if cnt == 0:
+            return None, -1, None
         ndx = np.random.randint(cnt)
         item = lst[ndx]
         strFile = './outs/' + item['filename'][2:]
