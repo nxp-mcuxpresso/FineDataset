@@ -124,8 +124,8 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
                 else:
                     self._noHeadCnt += 1 
                     print('无head_attr: %s' % (dctIn['ID']))                               
-                if dctItem['occlusion'] != 0:
-                    continue
+                #if dctItem['occlusion'] != 0:
+                #    continue
                 lstBBoxes.append(dctItem)
             if len(lstBBoxes) == 0:
                 continue
