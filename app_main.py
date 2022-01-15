@@ -4,6 +4,7 @@ import PyQt5
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QCheckBox, QWidget, QApplication, QMainWindow, QMessageBox, QStatusBar, QFileDialog, QInputDialog
 from PyQt5.QtCore import Qt
+from numpy.lib.type_check import isreal
 import widertools
 import json
 import os.path as path
@@ -90,17 +91,17 @@ class MainAppLogic():
         ui.cmbSubSet.textActivated.connect(lambda: self.LoadDataset(self.nextDSFolder))
         #ui.cmbSubSet.highlighted.connect(lambda: LoadDataset(ui)) 
         ui.btnRandom.clicked.connect(self.OnClicked_Random)
-        ui.btnGenSingleFaceDataSet.clicked.connect(self.OnClicked_GenSingleFaceDataset)
+        ui.btnGenSingleFaceDataSet.clicked.connect(lambda: self.OnClicked_GenPatchDataset(singleStr='single'))
         ui.btnValidateSingleFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
         ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateMultiFaceDataset) 
         ui.btnOriImg.clicked.connect(self.OnClicked_OriImage)       
-        ui.btnGenMultiFaceDataSet.clicked.connect(lambda: self.OnClicked_GenMultiFaceDataset())
+        ui.btnGenMultiFaceDataSet.clicked.connect(lambda: self.OnClicked_GenPatchDataset())
         ui.btnTagSelAll.clicked.connect(self.OnClicked_TagSelAll)
         ui.btnTagSelInv.clicked.connect(self.OnClicked_TagSelInv)        
         ui.btnDSFolder.clicked.connect(self.OnClicked_DSFolder)
         ui.btnToVoc.clicked.connect(self.OnClicked_ToVOC)
 
-        ui.menuDbgGenMultiForCurrent.triggered.connect(lambda: self.OnClicked_GenMultiFaceDataset(ndcIn=[self.rndNdx]))
+        ui.menuDbgGenMultiForCurrent.triggered.connect(lambda: self.OnClicked_GenPatchDataset(ndcIn=[self.rndNdx]))
         ui.menuDelNonCheckedTags.triggered.connect(lambda: self.dataObj.FilterTags(self.GetDisallowedTags()))
         ui.menuSpecifyImageNdx.triggered.connect(lambda: self.OnMenuTriggered_SpecifyImageNdx())
         ui.pgsBar.setVisible(False)
@@ -214,13 +215,15 @@ class MainAppLogic():
                 shutil.rmtree(sTry)
         else:
             ndx = 1
-            while path.exists(sTry):
+            while True:
                 now = int(time.time())
                 #转换为其他日期格式,如:"%Y-%m-%d %H:%M:%S"
                 timeArray = time.localtime(now)
                 otherStyleTime = time.strftime("%Y-%m-%d-%H-%M-%S", timeArray)            
                 sTry = '%s_%s' % (strPrimary, otherStyleTime)
                 ndx += 1
+                if not path.exists(sTry):
+                    break
         return sTry
 
     def _StatUsage(self, dbgSkips):
@@ -253,7 +256,8 @@ class MainAppLogic():
         else:
             QMessageBox.information(MainWindow, '生成结果统计', '没有生成任何数据')            
 
-    def OnClicked_GenMultiFaceDataset(self, ndcIn=[]):
+    def OnClicked_GenPatchDataset(self, ndcIn=[], singleStr='multi'):
+        self.dsFolder = self.dsFolder
         if len(ndcIn) == 0:
             cnt = len(self.dataObj.dctFiles.keys())
             ndc = np.arange(cnt)
@@ -266,8 +270,16 @@ class MainAppLogic():
             maxPatchPerImg = 50
         np.random.shuffle(ndc)
 
-        strOutFolder = './outs/out_%s_multi' % (self.ui.cmbSubSet.currentText())
-        strOutFolder = self.GetNextFreeFolder(strOutFolder)
+        strOutFolder = './outs/out_%s_%s' % (self.ui.cmbSubSet.currentText(), singleStr)
+        isReplace = True
+        if path.abspath(strOutFolder) == path.abspath(self.dsFolder):
+            isReplace = False
+        elif mainUI.chkOutHasTmStmp.isChecked() == True:
+            isReplace = False
+        strOutFolder = self.GetNextFreeFolder(strOutFolder, isReplace=isReplace)
+        if path.abspath(strOutFolder) == path.abspath(self.dsFolder):
+            self.ui.statusBar.showMessage('不能制作 - 源数据集路径不能与输出路径相同！')
+            return
         self.strOutFolder = strOutFolder
         outW = int(self.ui.txtOutX.text())
         outH = int(self.ui.txtOutY.text())        
@@ -293,11 +305,18 @@ class MainAppLogic():
             #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
             #self.ShowImage(table, ndx, strKey)
             self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
-            self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(
-                strOutFolder, self.patchNdx, ndx=ndx, minCloseRate=minClose, maxObjPerCluster=maxObjPerCluster, 
-                isAllowMorePerPatch=mainUI.chkAllowMoreObj.isChecked(), maxPatchPerImg=maxPatchPerImg,
-                areaRateRange=[minAreaRate, maxAreaRate], outWH=[outW, outH], allowedTags=lstAllowed,
-                dbgSkips=dbgSkips)
+            if singleStr == 'multi':
+                self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(
+                    strOutFolder, self.patchNdx, ndx=ndx, minCloseRate=minClose, maxObjPerCluster=maxObjPerCluster, 
+                    isAllowMorePerPatch=mainUI.chkAllowMoreObj.isChecked(), maxPatchPerImg=maxPatchPerImg,
+                    areaRateRange=[minAreaRate, maxAreaRate], outWH=[outW, outH], allowedTags=lstAllowed,
+                    dbgSkips=dbgSkips)
+            else:
+                self.patchNdx, lstPatches = self.dataObj.CutPatches(
+                    strOutFolder, self.patchNdx, ndx=ndx, outWH=[outW, outH], 
+                    areaRateRange=[minAreaRate, maxAreaRate], allowedTags=lstAllowed,
+                    dbgSkips=dbgSkips)
+
             self.lstPatches += lstPatches
             if self.patchNdx >= dsSize:
                 break
@@ -322,57 +341,11 @@ class MainAppLogic():
         self.ui.tmrToHidePgsBar.start()
         #self.ui.pgsBar.setVisible(False)
 
-    def OnClicked_GenSingleFaceDataset(self):
-        cnt = len(self.dataObj.dctFiles.keys())
-        ndc = np.arange(cnt)
-        np.random.shuffle(ndc)
-        strOutFolder = './outs/out_%s_single' % (self.ui.cmbSubSet.currentText())
-        strOutFolder = self.GetNextFreeFolder(strOutFolder)
-        self.strOutFolder = strOutFolder
-        outX = int(self.ui.txtOutX.text())
-        outY = int(self.ui.txtOutY.text())        
-        self.patchNdx = 0
-        self.lstPatches = []
-        minAreaRate = (float(self.ui.cmbMinAreaRate.currentText()[:4]) / 100.0) ** 2
-        maxAreaRate = (float(self.ui.cmbMaxAreaRate.currentText()[:4]) / 100.0) ** 2          
-        dsSize = int(self.ui.txtDatasetSize.text())
-        if not path.exists(strOutFolder):
-            os.makedirs(strOutFolder)
-        self.ui.pgsBar.setValue(1)
-        self.ui.pgsBar.setVisible(True)
-        self.ui.tmrToHidePgsBar.stop()
-        lstAllowed = self.GetAllowedTags()
-        dbgSkips = [0,0,0,0,0,0,0]
-        mainUI.btnAbort.setEnabled(True)
-        for ndx in ndc:
-            #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
-            #self.ShowImage(table, ndx, strKey)            
-            self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
-            self.patchNdx, lstPatches = self.dataObj.CutPatches(
-                strOutFolder, self.patchNdx, ndx=ndx, outWH=[outX, outY], 
-                areaRateRange=[minAreaRate, maxAreaRate], allowedTags=lstAllowed,
-                dbgSkips=dbgSkips)
-            self.lstPatches += lstPatches
-            if self.patchNdx >= dsSize:
-                break
-            if self.isToAbort:
-                self.isToAbort = False
-                break
-            pgs = 100 * self.patchNdx / dsSize
-            self.ui.pgsBar.setValue(pgs)
-            print('%d/%d completed' % (self.patchNdx, dsSize))
-            QApplication.processEvents()
-        self.ui.pgsBar.setValue(100)
-        mainUI.btnAbort.setEnabled(False)  
-        with open('%s/bboxes.json' % (strOutFolder), 'w', encoding='utf-8') as fd:
-            json.dump(self.lstPatches, fd, indent=4)
-        self.ui.statusBar.showMessage('制作了%d/%d张图片于%s' % (self.patchNdx, dsSize, strOutFolder), 5000)
-        self._StatUsage(dbgSkips)
-        self.ui.tmrToHidePgsBar.start()
-        # self.ui.pgsBar.setVisible(False)
-
     def OnClicked_ValidateDataset(self, strSel='single'):
-        strOutFolder = './outs/out_%s_%s' % (self.ui.cmbSubSet.currentText(), strSel)
+        if self.strOutFolder == '':
+            strOutFolder = './outs/out_%s_%s' % (self.ui.cmbSubSet.currentText(), strSel)
+        else:
+            strOutFolder = self.strOutFolder
         table, ndx, item = self.dataObj.ShowRandomValidate(strOutFolder)
         if table is None:
             self.ui.statusBar.showMessage('未找到制作的数据集')
