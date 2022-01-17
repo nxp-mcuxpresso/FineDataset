@@ -125,7 +125,7 @@ class MyMainUI(pyqt5_ab_main.Ui_MainWindow):
         self.lblMain.setText("lblMain")
 
         self.cmbSubSet.addItems(['train','val', 'any'])
-        
+        self.cmbSubSet.setCurrentIndex(2)
         # 生成各个特征图上的锚框配置组框
         self.lstFraABs = [(FraAB(self.fraConsole, i)) for i in range(0, 8)]
 
@@ -502,7 +502,7 @@ class MainAppLogic():
         uiMain.statusbar.showMessage('数据集读取中...')
         QApplication.processEvents()
         try:
-            setSel = 'train' #uiMain.cmb
+            setSel = uiMain.cmbSubSet.currentText() #uiMain.cmb
             provider = uiMain.dctPlugins[dsType](dir_choose, setSel, dctCfg, callback)
 
         except Exception as e:
