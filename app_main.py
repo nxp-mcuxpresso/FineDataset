@@ -77,10 +77,10 @@ class MainAppLogic():
                 lstRet.append(strVal[:4] + sUnit)
             return lstRet
 
-        ui.cmbMinAreaRate.addItems(CalcCmbValues(0.00008, 0.99, 2**0.5, True))
-        ui.cmbMaxAreaRate.addItems(CalcCmbValues(0.00008, 0.99, 2**0.5, True))
+        ui.cmbMinAreaRate.addItems(CalcCmbValues(1/2048, 0.5, 2**0.5, True))
+        ui.cmbMaxAreaRate.addItems(CalcCmbValues(16/2048, 1.0, 2**0.5, True))
         ui.cmbMinCloseRate.addItems(CalcCmbValues(0.01, 0.6, 1.25, False))
-        ui.cmbMinAreaRate.setCurrentIndex(15)
+        ui.cmbMinAreaRate.setCurrentIndex(12)
         ui.cmbMaxAreaRate.setCurrentIndex(2)
         ui.cmbMinCloseRate.setCurrentIndex(5)
         #ui.cmbSubSet.currentIndexChanged.connect(lambda: LoadDataset(ui))

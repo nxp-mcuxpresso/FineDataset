@@ -530,8 +530,10 @@ class Patcher():
             # 留下比较大margin的scaler多试几次，每次都有随机性
             scalers = [0.8]*6 + [0.9]*3 + [1]
             outOriNdc = []
+            isAbandonThisPatch = False
             for scaler in scalers:
-                
+                if isAbandonThisPatch:
+                    break
                 newSkipBadSizeCnt = 0
                 newSkipOutBoundCnt = 0
                 newSkipNotCloseCnt = 0
@@ -583,20 +585,28 @@ class Patcher():
                         continue
                     if ptx1 < 0 or pty1 < 0 or ptx2 >= w2 or pty2 >= h2:
                         # 检查出界程度
+                        isClipFromHead = False
                         if ptx1 < 0:
-                            clipW = gtW + ptx1
+                            clipW = min(w2, gtW + ptx1)
                             ptx1 = 0
                         if pty1 < 0:
-                            clipH = gtH + pty1
+                            isClipFromHead = True
+                            clipH = min(h2, gtH + pty1)
                             pty1 = 0
                         if ptx2 >= w2:
-                            clipW = gtW - (ptx2 + 1 - w2)
+                            clipW = min(w2, gtW - (ptx2 + 1 - w2))
                             ptx2 = w2 - 1
                         if pty2 >= h2:
-                            clipH = gtH - (pty2 + 1 - h2)
+                            clipH = min(h2, gtH - (pty2 + 1 - h2))
                             pty2 = h2 - 1
-                            
-                        if clipW * clipH / gtW / gtH < 0.5:
+                        iouMin = 0.5 if isClipFromHead == False else 0.3
+                        if clipW * clipH / gtW / gtH < iouMin:
+                            if gtW * gtH / w2 / h2 >= 1.0:
+                                # 被剪裁的物体太大，很可能有大部分残留在子块区域中，
+                                # 会对训练产生明显不良影响，所以宁可放弃这个子块
+                                lstBBxyxys = []
+                                isAbandonThisPatch = True
+                                break
                             newSkipOutBoundCnt += 1 
                             continue
                     areaRate = clipW * clipH / w2 / h2
