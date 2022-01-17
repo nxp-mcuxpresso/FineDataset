@@ -6,7 +6,8 @@
 import time
 from os.path import getmtime
 import os
-lstUIs = ['widertools.ui']
+lstUIs = ['widertools.ui',  './abox_tools/pyqt5_ab_main.ui', 
+    './abox_tools/pyqt5_ab_dlg_cfg_cluster.ui']
 
 lstTSs = [0] * len(lstUIs)
 

@@ -73,6 +73,15 @@ class SubdatasetUtils(abstract_utils.AbstractUtils):
                 }
         bkpt = 0
     
+    def IsFixedSizeImg(self):
+        from PIL import Image
+        fileKey = list(self.dctFiles.keys())[0]    
+        imgIO = self.MapFile(fileKey)
+        img = Image.open(imgIO)
+        imgWH = {'w': img.width, 'h':img.height}
+        img.close()
+        return True, imgWH
+
     def IsSupportGTPerImg(self):
         return True
 

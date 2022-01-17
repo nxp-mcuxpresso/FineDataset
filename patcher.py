@@ -814,7 +814,7 @@ class Patcher():
     def ShowAt(self, ndx, isShow=True, allowedTags = ['*']):
         return self.ShowImage(ndx, isShow, allowedTags)
 
-    def ShowRandomValidate(self, strOutFolder):
+    def ShowRandomValidate(self, strOutFolder=''):
         try:
             with open("%s/bboxes.json" % (strOutFolder)) as fd:
                 lst = json.load(fd)

@@ -108,6 +108,28 @@ class WF2VOC():
         if isTarOnly:
             shutil.rmtree(self.strOutPath)
         return cnt
+
+    def ScanAndDelInvalidBBoxEntries(self, maxCnt=1E7, callback=None):
+        if path.exists(self.strInPath):
+            with open(self.strInPath + '/bboxes.json') as fd:
+                self.lstBBoxes = json.load(fd)
+        else:
+            return -1
+
+        cnt = 0
+        total = len(self.lstBBoxes)
+
+        lstNewBBoxes = list()
+        for item in self.lstBBoxes:
+            imgFile = self.strRootPath + '/' + item['filename']
+            if path.exists(imgFile):
+                lstNewBBoxes.append(item)
+        if len(lstNewBBoxes) < len(self.lstBBoxes):
+            with open(self.strInPath + '/bboxes.json', 'w') as fd:
+                self.lstBBoxes = lstNewBBoxes
+                json.dump(lstNewBBoxes, fd)
+        return cnt
+
 if __name__ == '__main__':
     tester = WF2VOC('train','multi')
     tester.MakeVOC(50)

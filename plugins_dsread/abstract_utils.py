@@ -19,9 +19,15 @@ class AbstractUtils(ABC):
         self.dctFiles = dict()
         bkpt = 0
 
+    def CanDelTags(self):
+        return False
+        
     def DelTags(self, lstTags:list):
         return False
     
+    def IsFixedSizeImg(self):
+        return False, {'w':0, 'h':0}
+
     def IsSupportGTPerImg(self):
         return False
 

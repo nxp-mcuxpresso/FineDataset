@@ -204,6 +204,35 @@ class VOCUtils(abstract_utils.AbstractUtils):
         dt = (t2 - t1)
         bkpt = 0
     
+    def DelTags(self, lstTags:list):
+        newDctFiles = dict()
+        for key in self.dctFiles.keys():
+            item = self.dctFiles[key]
+            newXywhs = []            
+            for xywh in item['xywhs']:
+                tag = xywh['tag']
+                if not tag in lstTags:
+                    newXywhs.append(xywh)
+                else:
+                    self.dctTags[tag] -= 1
+            if len(newXywhs) != 0:
+                item['cnt'] = len(newXywhs)
+                item['xywhs'] = newXywhs
+                newDctFiles[key] = item
+            else:
+                # 删光了
+                pass
+        self.dctFiles = newDctFiles
+        # 删除数量为0的tags
+        newDictTags = dict()
+        for k in self.dctTags.keys():
+            if self.dctTags[k] != 0:
+                newDictTags[k] = self.dctTags[k]
+        self.dctTags = newDictTags
+            
+    def CanDelTags(self):
+        return True
+
     def IsSupportGTPerImg(self):
         return True
 

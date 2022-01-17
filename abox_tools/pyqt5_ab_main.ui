@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1441</width>
-    <height>843</height>
+    <width>1409</width>
+    <height>912</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,13 +19,70 @@
      <rect>
       <x>980</x>
       <y>140</y>
-      <width>451</width>
-      <height>641</height>
+      <width>421</width>
+      <height>681</height>
      </rect>
     </property>
     <property name="title">
      <string>各特征图上的锚框配置</string>
     </property>
+    <widget class="QPushButton" name="btnValidate">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>640</y>
+       <width>71</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Tahoma</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>再次验证</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnValidateRandom">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>640</y>
+       <width>81</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Tahoma</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>随机验证</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnApplyABCfg">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>640</y>
+       <width>81</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Tahoma</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>应用配置</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QLabel" name="lblMain">
     <property name="geometry">
@@ -33,7 +90,7 @@
       <x>10</x>
       <y>10</y>
       <width>961</width>
-      <height>768</height>
+      <height>841</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -65,9 +122,9 @@
    <widget class="QSlider" name="sldABsToDraw">
     <property name="geometry">
      <rect>
-      <x>1120</x>
+      <x>1110</x>
       <y>10</y>
-      <width>231</width>
+      <width>211</width>
       <height>22</height>
      </rect>
     </property>
@@ -84,13 +141,47 @@
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnValidateRandom">
+   <widget class="QPushButton" name="btnCluster">
     <property name="geometry">
      <rect>
-      <x>1080</x>
-      <y>100</y>
-      <width>111</width>
+      <x>1330</x>
+      <y>10</y>
+      <width>71</width>
       <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Tahoma</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>边框聚类</string>
+    </property>
+   </widget>
+   <widget class="QProgressBar" name="pgsBar">
+    <property name="geometry">
+     <rect>
+      <x>970</x>
+      <y>860</y>
+      <width>118</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="value">
+     <number>24</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_15">
+    <property name="geometry">
+     <rect>
+      <x>1290</x>
+      <y>60</y>
+      <width>26</width>
+      <height>16</height>
      </rect>
     </property>
     <property name="font">
@@ -100,15 +191,46 @@
      </font>
     </property>
     <property name="text">
-     <string>随机验证</string>
+     <string>子集</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnCluster">
+   <widget class="QComboBox" name="cmbSubSet">
     <property name="geometry">
      <rect>
       <x>1320</x>
-      <y>100</y>
-      <width>111</width>
+      <y>60</y>
+      <width>81</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnLoadDataset">
+    <property name="geometry">
+     <rect>
+      <x>990</x>
+      <y>90</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Tahoma</family>
+      <pointsize>10</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>装载</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnDSFolder">
+    <property name="geometry">
+     <rect>
+      <x>990</x>
+      <y>50</y>
+      <width>91</width>
       <height>31</height>
      </rect>
     </property>
@@ -121,16 +243,16 @@
      </font>
     </property>
     <property name="text">
-     <string>边框聚类</string>
+     <string>数据集目录...</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnValidate">
+   <widget class="QLabel" name="label_13">
     <property name="geometry">
      <rect>
-      <x>1200</x>
-      <y>100</y>
-      <width>111</width>
-      <height>31</height>
+      <x>1100</x>
+      <y>60</y>
+      <width>26</width>
+      <height>16</height>
      </rect>
     </property>
     <property name="font">
@@ -140,16 +262,26 @@
      </font>
     </property>
     <property name="text">
-     <string>再次验证</string>
+     <string>类型</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnApplyABCfg">
+   <widget class="QComboBox" name="cmbDSType">
     <property name="geometry">
      <rect>
-      <x>990</x>
-      <y>100</y>
-      <width>81</width>
-      <height>31</height>
+      <x>1132</x>
+      <y>60</y>
+      <width>141</width>
+      <height>20</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_14">
+    <property name="geometry">
+     <rect>
+      <x>1270</x>
+      <y>110</y>
+      <width>45</width>
+      <height>16</height>
      </rect>
     </property>
     <property name="font">
@@ -159,56 +291,18 @@
      </font>
     </property>
     <property name="text">
-     <string>应用配置</string>
+     <string>匹配IoU</string>
     </property>
    </widget>
-   <widget class="QSplitter" name="splitter">
+   <widget class="QComboBox" name="cmbIoUThd">
     <property name="geometry">
      <rect>
-      <x>990</x>
-      <y>50</y>
-      <width>441</width>
-      <height>24</height>
+      <x>1322</x>
+      <y>110</y>
+      <width>69</width>
+      <height>20</height>
      </rect>
     </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
-    </property>
-    <widget class="QPushButton" name="btnDSFolder">
-     <property name="font">
-      <font>
-       <family>Tahoma</family>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>数据集目录...</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_13">
-     <property name="font">
-      <font>
-       <family>Tahoma</family>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>类型</string>
-     </property>
-    </widget>
-    <widget class="QComboBox" name="cmbDSType"/>
-    <widget class="QLabel" name="label_14">
-     <property name="font">
-      <font>
-       <family>Tahoma</family>
-       <pointsize>10</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>匹配IoU</string>
-     </property>
-    </widget>
-    <widget class="QComboBox" name="cmbIoUThd"/>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -216,7 +310,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1441</width>
+     <width>1409</width>
      <height>23</height>
     </rect>
    </property>
@@ -242,6 +336,7 @@
      <string>测试</string>
     </property>
     <addaction name="menuShowRandom"/>
+    <addaction name="menuShowAt"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menuA_test"/>
@@ -293,6 +388,11 @@
   <action name="menuStatAboxMatching">
    <property name="text">
     <string>统计锚框匹配情况</string>
+   </property>
+  </action>
+  <action name="menuShowAt">
+   <property name="text">
+    <string>Show specified index</string>
    </property>
   </action>
  </widget>

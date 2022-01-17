@@ -797,8 +797,8 @@
      <rect>
       <x>1180</x>
       <y>510</y>
-      <width>181</width>
-      <height>61</height>
+      <width>191</width>
+      <height>101</height>
      </rect>
     </property>
     <property name="font">
@@ -808,7 +808,7 @@
      </font>
     </property>
     <property name="title">
-     <string>验证子块数据集</string>
+     <string>验证子块数据集与工具</string>
     </property>
     <widget class="QPushButton" name="btnValidateMultiFaceDataSet">
      <property name="geometry">
@@ -851,7 +851,7 @@
     <widget class="QPushButton" name="btnOriImg">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>130</x>
        <y>20</y>
        <width>51</width>
        <height>31</height>
@@ -867,25 +867,44 @@
       <string>原图</string>
      </property>
     </widget>
-   </widget>
-   <widget class="QPushButton" name="btnToVoc">
-    <property name="geometry">
-     <rect>
-      <x>1260</x>
-      <y>580</y>
-      <width>91</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <family>Tahoma</family>
-      <pointsize>9</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>-&gt; VOC tar</string>
-    </property>
+    <widget class="QPushButton" name="btnRefreshLabels">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>60</y>
+       <width>81</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Tahoma</family>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>刷新标注</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btnToVoc">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>60</y>
+       <width>81</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Tahoma</family>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>-&gt; VOC tar</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QPushButton" name="btnTagSelInv">
     <property name="geometry">
@@ -1026,6 +1045,7 @@
      <string>工具</string>
     </property>
     <addaction name="menuDelNonCheckedTags"/>
+    <addaction name="menuAboxTool"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
@@ -1055,6 +1075,14 @@
   <action name="menuDelNonCheckedTags">
    <property name="text">
     <string>Delete non-checked categories</string>
+   </property>
+  </action>
+  <action name="menuAboxTool">
+   <property name="text">
+    <string>Anchor box tool</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
    </property>
   </action>
  </widget>

@@ -1,4 +1,5 @@
 import sys
+from typing import AbstractSet
 from PyQt5 import QtGui, QtCore
 import PyQt5
 from PyQt5.QtGui import QPixmap
@@ -17,6 +18,7 @@ import importlib
 from patcher import DelTree
 import patcher
 import glob
+import plugins_dsread.abstract_utils as abstract_utils
 class MainAppLogic():
     def __init__(self, ui:widertools.Ui_MainWindow, mainWindow):
         self.ui = ui
@@ -99,10 +101,15 @@ class MainAppLogic():
         ui.btnTagSelAll.clicked.connect(self.OnClicked_TagSelAll)
         ui.btnTagSelInv.clicked.connect(self.OnClicked_TagSelInv)        
         ui.btnDSFolder.clicked.connect(self.OnClicked_DSFolder)
-        ui.btnToVoc.clicked.connect(self.OnClicked_ToVOC)
 
+        ui.btnToVoc.clicked.connect(lambda :self.OnClicked_ScanAndMayExportVOC())
+        ui.btnRefreshLabels.clicked.connect(lambda :self.OnClicked_ScanAndMayExportVOC(isToMakeVOC=False))
+        ui.menuAboxTool.triggered.connect(lambda: self.LaunchABoxToolInNewProcess())
         ui.menuDbgGenMultiForCurrent.triggered.connect(lambda: self.OnClicked_GenPatchDataset(ndcIn=[self.rndNdx]))
-        ui.menuDelNonCheckedTags.triggered.connect(lambda: self.dataObj.FilterTags(self.GetDisallowedTags()))
+        ui.menuDelNonCheckedTags.setVisible(False)
+        ui.btnDelNonCheckedTags.setEnabled(False)
+        ui.menuDelNonCheckedTags.triggered.connect(lambda: self.DelTags())
+        ui.btnDelNonCheckedTags.clicked.connect(lambda: self.DelTags())
         ui.menuSpecifyImageNdx.triggered.connect(lambda: self.OnMenuTriggered_SpecifyImageNdx())
         ui.pgsBar.setVisible(False)
         ui.tmrToHidePgsBar = QtCore.QTimer(self.mainWindow)
@@ -120,6 +127,14 @@ class MainAppLogic():
         ui.btnSaveOriBBoxes.clicked.connect(self.OnClicked_SaveOriBBoxes)
         if ui.chkAutoload.isChecked():
             self.LoadDataset('q:/datasets/wider_face')
+    def DelTags(self):
+        self.dataObj.FilterTags(self.GetDisallowedTags())
+        self.UpdateDataset(self.provider, self.dsFolder, dsType = mainUI.cmbDSType.currentText())
+    
+    def LaunchABoxToolInNewProcess(self):
+        import subprocess as sp
+        sp.Popen('python ./abox_tools/abox_main.py', shell=True)
+        #sp.call(["python", "./abox_tools/abox_main.py", ' '.join(sys.argv)], shell = True)
 
     def OnMenuTriggered_SpecifyImageNdx(self):
         ndx, isOK = QInputDialog.getInt(MainWindow, '设置当前图片索引', '请输入索引：', min = 0) 
@@ -163,7 +178,26 @@ class MainAppLogic():
         # ui.imgWnd.setPixmap(pix2)
         ui.lblImg.setPixmap(pix3)
 
-    def OnClicked_ToVOC(self):
+    def OnClicked_ScanAndMayExportVOC(self, isToMakeVOC = True):
+        def callback(pgs):
+            self.ui.pgsBar.setValue(pgs)
+            QApplication.processEvents()
+        self.ui.pgsBar.setVisible(True)
+        for setSel in ['train', 'val', 'test']:
+            for cntSel in ['single', 'multi']:
+                self.ui.pgsBar.setValue(1)
+                self.ui.statusBar.showMessage('正在转换%s %s' % (setSel, cntSel), 60000)
+                QApplication.processEvents()
+                voc = w2v.WF2VOC(setSel, cntSel)
+                voc.ScanAndDelInvalidBBoxEntries(callback=callback)
+                if isToMakeVOC:
+                    self.ui.statusBar.showMessage('导出VOC格式数据集中...')
+                    voc.MakeVOC(callback=callback)
+        self.ui.statusBar.showMessage('转换完成', 5000)
+        self.ui.tmrToHidePgsBar.start()
+
+    def OnClicked_ScanForInvalid(self):
+        
         def callback(pgs):
             self.ui.pgsBar.setValue(pgs)
             QApplication.processEvents()
@@ -410,7 +444,46 @@ class MainAppLogic():
                 outText = ' :'.join(oriText.split(':')[:-1])[:-1]
                 lstTags.append(outText)
         return lstTags        
-        
+    
+    def UpdateDataset(self, provider:abstract_utils.AbstractUtils, dsFolder, dsType):
+
+        if provider is None or provider.dctFiles is None or provider.dctFiles == {}:
+            self.ui.statusBar.showMessage('%s中的数据集无法按%s解析！' % (dsFolder, dsType) )            
+        else:
+            mainUI.menuDelNonCheckedTags.setVisible(provider.CanDelTags())
+            mainUI.btnDelNonCheckedTags.setEnabled(provider.CanDelTags())
+            self.SetEnableStateBaseedOnDatasetAvailibiblity(True)
+            self.dsFolder = dsFolder
+            self.provider = provider
+            _translate = QtCore.QCoreApplication.translate
+            MainWindow.setWindowTitle(_translate("MainWindow", "数据集化简分割工具 - 已加载%s类型的数据集于：%s" % (mainUI.cmbDSType.currentText(), self.dsFolder)))            
+            self.dataObj = patcher.Patcher(provider)
+            self.ui.statusBar.showMessage('数据集%s (%s)读取成功!' % (dsFolder, dsType))
+            for item in self.chkTags:
+                chk = item[0]
+                chk.hide()
+                chk.deleteLater()
+            self.chkTags = []
+            topFiller = QWidget()
+            dctTag = self.provider.GetTagDict()
+            maxLineLen = 0
+            for (i, tag) in enumerate(list(dctTag.keys())):
+                chk = QCheckBox(topFiller)
+                chk.setText(tag + ' : %d' % (dctTag[tag]))
+                lineLen = len(chk.text())
+                if lineLen > maxLineLen:
+                    maxLineLen = lineLen
+                chk.setChecked(True)
+                chk.isChecked()                
+                self.chkTags.append([chk, chk.text()])
+                self.chkTags.sort(key=lambda x:x[1], reverse=False)
+            if len(self.chkTags) == 1:
+                chk.setEnabled(False)
+            for (i, item) in enumerate(self.chkTags):
+                item[0].move(4, 5 + i * 20)
+            topFiller.setMinimumSize(8*maxLineLen, len(self.chkTags) * 20)
+            mainUI.scrollTags.setWidget(topFiller)        
+    
     def LoadDataset(self, dsFolder, isForced=False):
         # QMessageBox.information(None,'box',ui.cmbSubSet.currentText())
         # ui.cmbSubSet.currentData
@@ -466,7 +539,7 @@ class MainAppLogic():
             'maxGTPerImg': lstGTPerImgs[1]
         }
 
-        provider = None
+        provider: abstract_utils.AbstractUtils = None
         dsType = ui.cmbDSType.currentText()
         self.ui.statusBar.showMessage('数据集读取中...')
         QApplication.processEvents()
@@ -478,38 +551,7 @@ class MainAppLogic():
             print(e)
             self.ui.statusBar.showMessage('代码错误：\n' + str(e))
 
-        if provider is None or provider.dctFiles is None or provider.dctFiles == {}:
-            self.ui.statusBar.showMessage('%s中的数据集无法按%s解析！' % (dsFolder, dsType) )            
-        else:
-            self.SetEnableStateBaseedOnDatasetAvailibiblity(True)
-            self.dsFolder = dsFolder
-            self.provider = provider
-            _translate = QtCore.QCoreApplication.translate
-            MainWindow.setWindowTitle(_translate("MainWindow", "数据集化简分割工具 - 已加载%s类型的数据集于：%s" % (mainUI.cmbDSType.currentText(), self.dsFolder)))            
-            self.dataObj = patcher.Patcher(provider)
-            self.ui.statusBar.showMessage('数据集%s (%s)读取成功!' % (dsFolder, dsType))
-            for item in self.chkTags:
-                chk = item[0]
-                chk.hide()
-                chk.deleteLater()
-            self.chkTags = []
-            topFiller = QWidget()
-            dctTag = self.provider.GetTagDict()
-            maxLineLen = 0
-            for (i, tag) in enumerate(list(dctTag.keys())):
-                chk = QCheckBox(topFiller)
-                chk.setText(tag + ' : %d' % (dctTag[tag]))
-                lineLen = len(chk.text())
-                if lineLen > maxLineLen:
-                    maxLineLen = lineLen
-                chk.setChecked(True)
-                chk.isChecked()                
-                self.chkTags.append([chk, chk.text()])
-                self.chkTags.sort(key=lambda x:x[1], reverse=False)
-            for (i, item) in enumerate(self.chkTags):
-                item[0].move(4, 5 + i * 20)
-            topFiller.setMinimumSize(8*maxLineLen, len(self.chkTags) * 20)
-            mainUI.scrollTags.setWidget(topFiller)
+        self.UpdateDataset(provider, dsFolder, dsType)
         self.ui.pgsBar.setValue(100)
         self.ui.tmrToHidePgsBar.start()
 if __name__ == '__main__':

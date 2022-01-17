@@ -1,0 +1,66 @@
+[
+    {
+        "ndx": 0,
+        "enabled": false,
+        "aspects": "4/5,1/2",
+        "sizes": "5,3",
+        "dnsmp": "4",
+        "flavor": "D2L book"
+    },
+    {
+        "ndx": 1,
+        "enabled": false,
+        "aspects": "4/5,1/2",
+        "sizes": "5,3",
+        "dnsmp": "8",
+        "flavor": "D2L book"
+    },
+    {
+        "ndx": 2,
+        "enabled": true,
+        "aspects": "1,2/3,1/2,3/2,2",
+        "sizes": "4,2.5",
+        "dnsmp": "16",
+        "flavor": "D2L book"
+    },
+    {
+        "ndx": 3,
+        "enabled": true,
+        "aspects": "1,2/3,1/2,3/2,2",
+        "sizes": "4,2.5",
+        "dnsmp": "32",
+        "flavor": "D2L book"
+    },
+    {
+        "ndx": 4,
+        "enabled": true,
+        "aspects": "1,2/3,1/2,3/2,2",
+        "sizes": "4,2.5",
+        "dnsmp": "64",
+        "flavor": "eIQ"
+    },
+    {
+        "ndx": 5,
+        "enabled": true,
+        "aspects": "1,2/3,1/2,3/2,2",
+        "sizes": "4,2.5",
+        "dnsmp": "128",
+        "flavor": "D2L book"
+    },
+    {
+        "ndx": 6,
+        "enabled": false,
+        "aspects": "1, fib",
+        "sizes": "1, 1.3",
+        "dnsmp": "256",
+        "flavor": "eIQ"
+    },
+    {
+        "ndx": 7,
+        "enabled": false,
+        "aspects": "1, fib",
+        "sizes": "1, 1.3",
+        "dnsmp": "512",
+        "flavor": "eIQ"
+    }
+]
