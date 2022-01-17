@@ -696,6 +696,9 @@ class MainAppLogic():
         imgCnt = len(lstLabeledImages)
         lstMatchSizes = []
         lstMatchAspects = []
+        self.ui.pgsBar.setValue(1)
+        self.ui.pgsBar.setVisible(True)
+
         for (i, labeledImg) in enumerate(lstLabeledImages):
             if uiMain.isFixedImgSize == False:
                 if 'imgWH' not in labeledImg.keys():
@@ -714,6 +717,7 @@ class MainAppLogic():
                 imgWH = uiMain.inWH       
             if i % 10 == 0:
                 uiMain.statusbar.showMessage('已完成%d/%d' % (i+1, imgCnt), 3000)
+                uiMain.pgsBar.setValue(100 * i / imgCnt)
                 QApplication.processEvents()
             dctMatched = self.ui.CalcABMatching(inWH= imgWH, gts = labeledImg['xyxys'])
             gtCnt = len(labeledImg['xyxys'])            
@@ -761,7 +765,8 @@ class MainAppLogic():
             'match_dist_aspect' : lstMatchAspects,
             'details': dctMatchSmry
         }
-
+        self.ui.pgsBar.setValue(100)
+        self.ui.tmrToHidePgsBar.start()
         with open('match_stat.json', 'w') as fd:
             json.dump(self.dctMatchResult, fd, indent=4)
 
