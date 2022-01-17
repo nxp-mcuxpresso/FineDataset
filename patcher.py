@@ -548,7 +548,7 @@ class Patcher():
                 # 上面的操作导致需要重新计算closeRate
                 
                 # 跳过太小的图像
-                if w2 < 25 or h2 < 25:
+                if w2/outWH[0] < 0.4 or h2 / outWH[1] < 0.4:
                     newSkipBadSizeCnt += len(pat[0])
                     break
                 
@@ -599,9 +599,9 @@ class Patcher():
                         if pty2 >= h2:
                             clipH = min(h2, gtH - (pty2 + 1 - h2))
                             pty2 = h2 - 1
-                        iouMin = 0.5 if isClipFromHead == False else 0.3
+                        iouMin = 0.6 if isClipFromHead == False else 0.8
                         if clipW * clipH / gtW / gtH < iouMin:
-                            if gtW * gtH / w2 / h2 >= 1.0:
+                            if clipW * clipH / w2 / h2 >= 0.16:
                                 # 被剪裁的物体太大，很可能有大部分残留在子块区域中，
                                 # 会对训练产生明显不良影响，所以宁可放弃这个子块
                                 lstBBxyxys = []
