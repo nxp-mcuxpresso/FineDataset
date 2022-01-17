@@ -81,8 +81,8 @@ class MainAppLogic():
         ui.cmbMaxAreaRate.addItems(CalcCmbValues(16/2048, 1.0, 2**0.5, True))
         ui.cmbMinCloseRate.addItems(CalcCmbValues(0.01, 0.6, 1.25, False))
         ui.cmbMinAreaRate.setCurrentIndex(12)
-        ui.cmbMaxAreaRate.setCurrentIndex(2)
-        ui.cmbMinCloseRate.setCurrentIndex(5)
+        ui.cmbMaxAreaRate.setCurrentIndex(0)
+        ui.cmbMinCloseRate.setCurrentIndex(6)
         #ui.cmbSubSet.currentIndexChanged.connect(lambda: LoadDataset(ui))
         self.SetEnableStateBaseedOnDatasetAvailibiblity(False)
         def _SetAbort(self):
