@@ -183,7 +183,7 @@ class MainAppLogic():
             self.ui.pgsBar.setValue(pgs)
             QApplication.processEvents()
         self.ui.pgsBar.setVisible(True)
-        for setSel in ['train', 'val', 'test']:
+        for setSel in ['train', 'val', 'test', 'any']:
             for cntSel in ['single', 'multi']:
                 self.ui.pgsBar.setValue(1)
                 self.ui.statusBar.showMessage('正在转换%s %s' % (setSel, cntSel), 60000)

@@ -25,7 +25,7 @@ strPatten = '''
 
 strObj = '''
 	<object>
-		<name>face</name>
+		<name>%s</name>
 		<pose>Right</pose>
 		<truncated>0</truncated>
 		<difficult>0</difficult>
@@ -86,7 +86,7 @@ class WF2VOC():
                 os.remove(sOutJpgPath)
             strOutFrame = strPatten % (self.setSel, self.cntSel, sFileName, img.shape[0], img.shape[1])
             for xyxy in item['xyxys']:
-                strVocBox = strObj % (xyxy[0], xyxy[1], xyxy[2], xyxy[3])
+                strVocBox = strObj % (xyxy[4], xyxy[0], xyxy[1], xyxy[2], xyxy[3])
                 strOutFrame += strVocBox
             strOutFrame += '</annotation>\n'
             
