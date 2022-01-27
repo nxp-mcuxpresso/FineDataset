@@ -91,9 +91,16 @@ class Patcher():
         '''
         strFile = list(self.dctFiles.keys())[ndx]
         item = self.dctFiles[strFile]
+
+        if allowedTags[0] != '*':
+            itemNew = item.copy()
+            itemNew['xywhs'] = []
+            for b1 in item['xywhs']:
+                if b1['tag'] in allowedTags:
+                    itemNew['xywhs'].append(b1)
+            itemNew['cnt'] = len(itemNew['xywhs'])
+            item = itemNew
         bboxCnt = len(item['xywhs'])
-        if len(item['xywhs']) < 2:
-            return [[],[],[]],None
      
         def _getValues(b1):
             w1 = b1['w']
@@ -270,6 +277,23 @@ class Patcher():
                     lstLeft.append(multiIn)
             return lstMulti, lstLeft
 
+        img = None
+        if len(item['xywhs']) < 2:
+            lstSolo = []
+            b1 = item['xywhs'][0]
+            wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(item['xywhs'][0])
+            dctBbox = {
+                'x1' : x1i,
+                'y1' : y1i,
+                'w': x2i - x1i,
+                'h': y2i - y1i,
+            }
+            if isDraw:
+                image = Image.open(self.provider.MapFile(strFile))
+                img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
+            lstSolo.append([[b1], (x1i, y1i), (x2i, y2i), dctBbox, b1['w'] * b1['h'], 1.0, [0]])
+            return [lstSolo,[],[]],np.array(img)
+
         # 先获取靠近的一对
         lstPairs = []
         for i in range(bboxCnt):
@@ -394,19 +418,19 @@ class Patcher():
                         if newLen == oldLen or newLen == 1:
                             break
                 lstNewTrints = lstLeft
-        self.provider.MapFile(strFile)
-        image = Image.open(self.provider.MapFile(strFile))
-        img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
         if isDraw:
-            for clst in lstNewPairs:
-                cv2.rectangle(img, clst[1], clst[2], (0, 0, 255), 2, 4)       
-            for clst in lstNewTrints:
-                cv2.rectangle(img, clst[1], clst[2], (0, 255, 255), 2, 4)
-            for clst in lstMulti:
-                cv2.rectangle(img, clst[1], clst[2], (255, 255, 255), 2, 4)     
-            if isShow:
-                cv2.imshow("OpenCV",img)
-                cv2.waitKey()
+            image = Image.open(self.provider.MapFile(strFile))
+            img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
+            if isDraw:
+                for clst in lstNewPairs:
+                    cv2.rectangle(img, clst[1], clst[2], (0, 0, 255), 2, 4)       
+                for clst in lstNewTrints:
+                    cv2.rectangle(img, clst[1], clst[2], (0, 255, 255), 2, 4)
+                for clst in lstMulti:
+                    cv2.rectangle(img, clst[1], clst[2], (255, 255, 255), 2, 4)     
+                if isShow:
+                    cv2.imshow("OpenCV",img)
+                    cv2.waitKey()
         
         
         lstRet = [lstNewPairs, lstNewTrints, lstMulti]
@@ -434,7 +458,7 @@ class Patcher():
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
         wVsH = outWH[0] / outWH[1]
-        lstRet, img = self.GetClusters(ndx, isShow=False, minClose=minCloseRate, maxObjPerCluster=maxObjPerCluster, outWvsH=wVsH, allowedTags=allowedTags)
+        lstRet, _ = self.GetClusters(ndx, minClose=minCloseRate, maxObjPerCluster=maxObjPerCluster, outWvsH=wVsH, allowedTags=allowedTags)
         if maxObjPerCluster < 3:
             lstOriPats = lstRet[0]
         elif maxObjPerCluster < 4:
@@ -515,10 +539,11 @@ class Patcher():
                     cx2 = wMax - w2 / 2
                 if cy2 + h2 / 2 > hMax:
                     cy2 = hMax - h2 / 2
-                x12 = int(cx2 - w2 // 2 + 0.5)
-                y12 = int(cy2 - h2 // 2 + 0.5)
-                x22 = int(cx2 + w2 // 2 + 0.5)
-                y22 = int(cy2 + h2 // 2 + 0.5)
+                x12 = int(cx2 - w2 / 2 + 0.5)
+                y12 = int(cy2 - h2 / 2 + 0.5)
+                x22 = int(cx2 + w2 / 2 - 1 + 0.5)
+                y22 = int(cy2 + h2 / 2 - 1 + 0.5)
+
                 return cx, cy, w, h, x12, y12, x22, y22, w2, h2             
             
             bbox = pat[3]
@@ -554,6 +579,16 @@ class Patcher():
                 
                 # x12, y12 表示子块在原图的左上角坐标
                 # x22, y22 表示子块在原图的右下角坐标
+                
+                # 若出现负坐标，则随机地均匀化两边的纯色边
+                if x12 < 0:
+                    dlt = int(-x12 * np.random.rand())
+                    x12 += dlt
+                    x22 += dlt
+                if y12 < 0:
+                    dlt = int(-y12 * np.random.rand())
+                    y12 += dlt
+                    y22 += dlt                
                 cropped = image.crop((x12, y12, x22, y22))
                 outXYXY = [x12, y12, x22, y22]
                 

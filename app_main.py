@@ -62,6 +62,22 @@ class MainAppLogic():
         #ui.cmbMinCloseRate.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         #ui.cmbMinCloseRate.setCurrentIndex(3)
         
+        def GenCfgDict(self):
+            dctRet = {
+                'DSTypeStr' : mainUI.cmbDSType.currentText(),
+                'DSTypeNdx' : mainUI.cmbDSType.currentIndex(),
+                'DSSubsetStr': mainUI.cmbSubSet.currentText(),
+                'DSSubsetNdx' : mainUI.cmbSubSet.currentIndex(),
+                'IsDSAutoLoad' : mainUI.chkAutoload.isChecked(),
+                'MinHvsW' : mainUI.txtMinHvsW.text(),
+                'MaxHvsW' : mainUI.txtMaxHvsW.text(),
+                'MinGTPerImg' : mainUI.txtMinGTPerImg.text(),
+                'MaxGTPerImg' : mainUI.txtMaxGTPerImg.text(),
+                'MinAreaRate': mainUI.cmbMinAreaRate.currentText(),
+                'DSSubsetNdx' : mainUI.cmbSubSet.currentIndex(),
+
+            }
+
         def CalcCmbValues(minVal, maxVal, step, isSquare=False):
             curVal = maxVal
             lstRet = []
@@ -104,6 +120,11 @@ class MainAppLogic():
 
         ui.btnToVoc.clicked.connect(lambda :self.OnClicked_ScanAndMayExportVOC())
         ui.btnRefreshLabels.clicked.connect(lambda :self.OnClicked_ScanAndMayExportVOC(isToMakeVOC=False))
+        
+        ui.menuLoadConfig.setEnabled(False)
+        ui.menuSaveConfig.setEnabled(False)
+        ui.menuSaveConfigAs.setEnabled(False)
+        
         ui.menuAboxTool.triggered.connect(lambda: self.LaunchABoxToolInNewProcess())
         ui.menuDbgGenMultiForCurrent.triggered.connect(lambda: self.OnClicked_GenPatchDataset(ndcIn=[self.rndNdx]))
         ui.menuDelNonCheckedTags.setVisible(False)
@@ -536,7 +557,8 @@ class MainAppLogic():
             'minHvsW' : lstHvsW_config[0],
             'maxHvsW' : lstHvsW_config[1],
             'minGTPerImg': lstGTPerImgs[0],
-            'maxGTPerImg': lstGTPerImgs[1]
+            'maxGTPerImg': lstGTPerImgs[1],
+            'isSkipDirtyImg': mainUI.chkSkipDirtyImage.isChecked()
         }
 
         provider: abstract_utils.AbstractUtils = None

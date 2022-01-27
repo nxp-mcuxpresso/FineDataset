@@ -37,6 +37,7 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
         dctFiles = dict()
         minHvsW, maxHvsW = 0.1, 10.0
         minGTPerImg, maxGTPerImg = 1, 50
+        isSkipDirtyImg = False
         try:
             minHvsW = dctCfg['minHvsW']
             maxHvsW = dctCfg['maxHvsW']
@@ -44,6 +45,7 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
             # 标注出现的顺序并不是某种图片的排列顺序。
             minGTPerImg = dctCfg['minGTPerImg']
             maxGTPerImg = dctCfg['maxGTPerImg']
+            isSkipDirtyImg = dctCfg['isSkipDirtyImg']
         except:
             pass
 
@@ -144,8 +146,7 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
                 if w < 8 or h < 8:
                     continue
                 aspect = h / w
-                if aspect < minHvsW or aspect > maxHvsW:
-                    continue               
+                badAspectFlag = 1 if aspect < minHvsW or aspect > maxHvsW else 0
                 dctItem = {
                     'x1': x1,
                     'y1': y1,
@@ -159,7 +160,8 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
                     'occlusion' : 0,
                     'pose': 0,
                     'difficult': 0,
-                    'isInvalid' : 0                   
+                    'isInvalid' : 0,
+                    'dirty': badAspectFlag
                 }
                 try:
                     dctItem['difficult'] = dct['iscrowd']
@@ -184,10 +186,25 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
         dctFilt = dict()
         t0 = time.time()
         for (i, itemKey) in enumerate(dctFiles.keys()):
+            isToSkipImg = False
             if i % 1000 == 0:
                 default_callback(i*100/len(dctFiles), '根据物体数量约束筛选', callback)            
             item = dctFiles[itemKey]
             cnt = item['cnt']
+            # 检查是否含有脏标注
+            if isSkipDirtyImg == True:
+                for xywh in item['xywhs']:
+                    if xywh['isDirty'] > 0:
+                        isToSkipImg = True
+                        break
+            else:
+                xywhs2 = []
+                for xywh in item['xywhs']:
+                    if xywh['isDirty'] == 0:
+                        xywhs2.append(xywh)
+                item['xywhs'] = xywhs2
+            if isToSkipImg == True:
+                continue
             if cnt >= minGTPerImg and cnt <= maxGTPerImg:
                 dctFilt[itemKey] = item
                 for xywh in item['xywhs']:

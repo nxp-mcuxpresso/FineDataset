@@ -20,7 +20,7 @@ class WFUtils(abstract_utils.AbstractUtils):
         st = STATE_WANT_FILENAME
         bboxRem = 0
         lstBBoxes = []
-
+        isSkipDirtyImg = False
         minHvsW, maxHvsW = 0.1, 10.0
         minGTPerImg, maxGTPerImg = 1, 50
         try:
@@ -28,6 +28,7 @@ class WFUtils(abstract_utils.AbstractUtils):
             maxHvsW = dctCfg['maxHvsW']
             minGTPerImg = dctCfg['minGTPerImg']
             maxGTPerImg = dctCfg['maxGTPerImg']
+            isSkipDirtyImg = dctCfg['isSkipDirtyImg']
         except:
             pass
         
@@ -37,6 +38,7 @@ class WFUtils(abstract_utils.AbstractUtils):
                 in_callback(pgs, msg)
         print('scaning')
         cnt = len(lstLines)
+        dirtyCnt = 0
         for (i, strLine) in enumerate(lstLines):
             strLine = strLine.strip()
             if st == STATE_WANT_FILENAME:
@@ -55,6 +57,7 @@ class WFUtils(abstract_utils.AbstractUtils):
                 st = STATE_WANT_BBOX_ITEM
                 bboxRem = nBBoxCnt
                 lstBBoxes = []
+                dirtyCnt = 0
             elif st == STATE_WANT_BBOX_ITEM:
                 if nBBoxCnt > 0:
                     lstVals = [int(x) for x in strLine.split(' ')]
@@ -70,23 +73,31 @@ class WFUtils(abstract_utils.AbstractUtils):
                         'occlusion' : lstVals[8],
                         'pose': lstVals[9],
                         'isInvalid' : lstVals[7],
+                        'dirty':0
                     }
 
                     if dctItem['isInvalid'] == 0 and dctItem['blur'] < 2:# and dctItem['pose'] == 0 and dctItem['occlusion'] < 1:
                         if lstVals[2] * lstVals[3] >= 16*16 and lstVals[2] != 0:
                             hVsW = lstVals[3] / lstVals[2]
                             if hVsW >= minHvsW and hVsW <= maxHvsW:
-                                lstBBoxes.append(dctItem)                                
+                                lstBBoxes.append(dctItem)
+                            else:
+                                if isSkipDirtyImg == False:
+                                    dctItem['dirty'] = 1
+                                    lstBBoxes.append(dctItem)
+                                else:
+                                    dirtyCnt += 1                               
                     bboxRem -= 1
                     if bboxRem == 0:
                         st = STATE_WANT_FILENAME
                         if len(lstBBoxes) >= minGTPerImg and len(lstBBoxes) <= maxGTPerImg :
-                            self.dctTags['face'] += len(lstBBoxes)
-                            self.dctFiles[fileKey] = {
-                                'cnt0' : nBBoxCnt,
-                                'cnt' : len(lstBBoxes),
-                                'xywhs' : lstBBoxes
-                            }
+                            if isSkipDirtyImg == False or dirtyCnt == 0:
+                                self.dctTags['face'] += len(lstBBoxes)
+                                self.dctFiles[fileKey] = {
+                                    'cnt0' : nBBoxCnt,
+                                    'cnt' : len(lstBBoxes),
+                                    'xywhs' : lstBBoxes
+                                }
                 else:
                     st = STATE_WANT_FILENAME
         bkpt = 0

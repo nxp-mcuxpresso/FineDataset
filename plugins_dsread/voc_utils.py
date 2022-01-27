@@ -67,9 +67,11 @@ class VOCUtils(abstract_utils.AbstractUtils):
             w = int(float(bndBox['xmax'])) - x
             h = int(float(bndBox['ymax'])) - y
             hVSw = h / w
+            dirty = 0
             if hVSw < dctNewCfg['minHvsW'] or hVSw > dctNewCfg['maxHvsW']:
-                continue
-
+                if dctNewCfg['isSkipDirtyImg']:
+                    return []
+                dirty = 1
             dctItem = {
                 'x1' : x,
                 'y1' : y,
@@ -78,7 +80,7 @@ class VOCUtils(abstract_utils.AbstractUtils):
                 'tag': obj['name'],
                 'blur': 0,
                 'isOverIllumination': 0,
-                'isInvalid' : 0,
+                'dirty' : dirty,
             }
             optionalKeyMap = ['difficult', 'pose', 'occlusion']
             for (i, optionalKey) in enumerate(['difficult', 'pose', 'truncated']):
@@ -88,8 +90,7 @@ class VOCUtils(abstract_utils.AbstractUtils):
                         dctItem[optionalKeyMap[i]] = int(obj[optionalKey])
                 except:
                     pass
-            if True: #dctItem['occlusion'] == 0:
-                lstXywhs.append(dctItem)
+            lstXywhs.append(dctItem)
         return lstXywhs
 
     def __init__(self, dsFolder = '.', setSel='train', dctCfg={}, callback=None):
@@ -101,7 +102,7 @@ class VOCUtils(abstract_utils.AbstractUtils):
         self.dctCfg = {}
         self.isTarMode = True
         self.tarRoots = []
-
+        isSkipDirtyImg = False
         minHvsW, maxHvsW = 0.1, 10.0
         minGTPerImg, maxGTPerImg = 1, 50
         try:
@@ -109,12 +110,14 @@ class VOCUtils(abstract_utils.AbstractUtils):
             maxHvsW = dctCfg['maxHvsW']
             minGTPerImg = dctCfg['minGTPerImg']
             maxGTPerImg = dctCfg['maxGTPerImg']
+            isSkipDirtyImg = dctCfg['isSkipDirtyImg']
         except:
             pass
 
         dctNewCfg = {
             'minHvsW' : minHvsW,
-            'maxHvsW' : maxHvsW
+            'maxHvsW' : maxHvsW,
+            'isSkipDirtyImg' : isSkipDirtyImg
         }
         t1 = time.time()
         # 扫描所有数据集
