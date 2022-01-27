@@ -26,7 +26,7 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
         self._unsureCnt = 0
         self._ignoreCnt = 0
         self._noHeadCnt = 0
-
+        isSkipDirtyImg = False
         minHvsW, maxHvsW = 0.1, 10.0
         minGTPerImg, maxGTPerImg = 1, 50
         try:
@@ -34,6 +34,7 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
             maxHvsW = dctCfg['maxHvsW']
             minGTPerImg = dctCfg['minGTPerImg']
             maxGTPerImg = dctCfg['maxGTPerImg']
+            isSkipDirtyImg = dctCfg['isSkipDirtyImg']
         except:
             pass
 
@@ -76,6 +77,7 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
             self.lstAnnos = self.lstAnnos[:maxCnt]
         imgCnt = min(maxCnt, len(self.lstAnnos))
         for i in range(imgCnt):
+            dirty = 0
             if i % 100 == 0:
                 if callback is not None:
                     callback(i * 100 / imgCnt)
@@ -87,7 +89,18 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
                 xywh = gtIn['vbox'] # fbox会把遮挡的部分也算进去
                 area = xywh[3] * xywh[2] / 100.0
                 tag = gtIn['tag']
-                
+
+                # 我们在检测人体，所以滤除过小的
+                if xywh[2] == 0:
+                    continue
+                aspect = xywh[3]  / xywh[2]
+                if aspect < minHvsW or aspect > maxHvsW:
+                    dirty = 1
+                    if isSkipDirtyImg:
+                        lstBBoxes = []
+                        break
+                if xywh[2]  * xywh[3] < 12*12:
+                    continue
                 dctItem = {
                     'x1' : xywh[0],
                     'y1' : xywh[1],
@@ -100,14 +113,10 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
                     'isOverIllumination': 0,
                     'occlusion' : 0,
                     'pose': 0,
-                    'isInvalid' : 0
+                    'isInvalid' : 0,
+                    'dirty': dirty
                 }
-                # 我们在检测人体，所以滤除过小的
-                if xywh[2] == 0:
-                    continue
-                aspect = xywh[3]  / xywh[2]
-                if aspect < minHvsW or aspect > maxHvsW:
-                    continue
+
                 areaAverage += area
                 if 'head_attr' in gtIn.keys():
                     dctHead = gtIn['head_attr']

@@ -636,7 +636,7 @@ class Patcher():
                             pty2 = h2 - 1
                         iouMin = 0.6 if isClipFromHead == False else 0.8
                         if clipW * clipH / gtW / gtH < iouMin:
-                            if clipW * clipH / w2 / h2 >= 0.16:
+                            if clipW * clipH / w2 / h2 >= 0.18:
                                 # 被剪裁的物体太大，很可能有大部分残留在子块区域中，
                                 # 会对训练产生明显不良影响，所以宁可放弃这个子块
                                 lstBBxyxys = []

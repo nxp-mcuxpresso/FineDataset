@@ -27,7 +27,7 @@ class SubdatasetUtils(abstract_utils.AbstractUtils):
         self.dctFiles = dict()
         self.setSel = setSel
         self.dctCfg = {}
-
+        isSkipDirtyImg = False
         minHvsW, maxHvsW = 0.1, 10.0
         minGTPerImg, maxGTPerImg = 1, 50
         try:
@@ -35,6 +35,7 @@ class SubdatasetUtils(abstract_utils.AbstractUtils):
             maxHvsW = dctCfg['maxHvsW']
             minGTPerImg = dctCfg['minGTPerImg']
             maxGTPerImg = dctCfg['maxGTPerImg']
+            isSkipDirtyImg = dctCfg['isSkipDirtyImg']
         except:
             pass
 
@@ -49,28 +50,42 @@ class SubdatasetUtils(abstract_utils.AbstractUtils):
             dctIn = dict()
             for item in lstIn:
                 in_xywhs = [[x[0], x[1], x[2] - x[0], x[3] - x[1], x[4]] for x in item['xyxys']]
-                xywhs = filter(lambda x: x[3] / x[2] >= minHvsW and x[3] / x[2] <= maxHvsW, in_xywhs)
-                xywhs = filter(lambda x: len(x) >= minGTPerImg and len(x) <= maxGTPerImg, xywhs)
+                xywhs = filter(lambda x: len(x) >= minGTPerImg and len(x) <= maxGTPerImg, in_xywhs)
                 xywhs = list(xywhs)
-                for xywh in xywhs:
-                    try:
-                        self.dctTags[xywh[4]] += 1
-                    except:
-                        self.dctTags[xywh[4]] = 1
+
                 fileKey = item['filename'].split('/')[-1]
-                xywhs = [{'x1': x[0], 'y1': x[1], 'w': x[2], 'h': x[3], 'tag': x[4],
+                xywhsOut = []
+                for x in xywhs:
+                    dirty = 0
+                    hVSw = x[3] / x[2]
+                    if hVSw < minHvsW or hVSw > maxHvsW:
+                        dirty = 1
+                        if isSkipDirtyImg:
+                            xywhsOut = []
+                            break
+                    xywh = {'x1': x[0], 'y1': x[1], 'w': x[2], 'h': x[3], 'tag': x[4],
                         'blur': 0,
                         'isExaggerate': 0,
                         'isOverIllumination': 0,
                         'occlusion' : 0,
                         'pose': 0,
                         'isInvalid' : 0,
-                } for x in xywhs]
-                self.dctFiles[fileKey] = {
-                    'cnt0': len(in_xywhs),
-                    'cnt': len(xywhs),
-                    'xywhs' : xywhs
-                }
+                        'dirty': dirty
+                    }
+                    xywhsOut.append(xywh)
+
+                if len(xywhsOut) > 0:
+                    for xywh in xywhsOut:
+                        try:
+                            self.dctTags[xywh['tag']] += 1
+                        except:
+                            self.dctTags[xywh['tag']] = 1
+                                        
+                    self.dctFiles[fileKey] = {
+                        'cnt0': len(in_xywhs),
+                        'cnt': len(xywhsOut),
+                        'xywhs' : xywhsOut
+                    }
         bkpt = 0
     
     def IsFixedSizeImg(self):
