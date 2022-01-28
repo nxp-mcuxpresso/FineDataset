@@ -200,8 +200,10 @@ class MainAppLogic():
         ui.lblImg.setPixmap(pix3)
 
     def OnClicked_ScanAndMayExportVOC(self, isToMakeVOC = True):
-        def callback(pgs):
+        def callback(pgs, msg=''):
             self.ui.pgsBar.setValue(pgs)
+            if len(msg) > 0:
+                self.ui.statusBar.showMessage(msg)
             QApplication.processEvents()
         self.ui.pgsBar.setVisible(True)
         for setSel in ['train', 'val', 'test', 'any']:

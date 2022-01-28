@@ -43,31 +43,37 @@ import os
 from shutil import rmtree
 import cv2
 import tarfile
+import glob
 class WF2VOC():
-    def __init__(self, setSel='train', cntSel='single', strRootPath = './outs'):
+    def __init__(self, setSel='train', subsetSel='single', strRootPath = './outs'):
         self.setSel = setSel
-        self.cntSel = cntSel
-        self.strOutPath = './outs/wf_voc_%s_%s' % (setSel, cntSel)
-        self.strInPath = '%s/out_%s_%s' % (strRootPath, setSel, cntSel)
+        self.subsetSel = subsetSel
+        
+        lst = glob.glob('%s/out_%s_%s*' % (strRootPath, setSel, subsetSel))
+        lst = [x.replace('\\', '/') for x in lst]
+        lst = list(filter(lambda x: path.isdir(x) == True, lst))
+        self.lstInPaths = lst
+        
         self.strRootPath = strRootPath
 
-    def MakeVOC(self, maxCnt=1E7, callback=None, isTarOnly=True):
-        if path.exists(self.strInPath):
-            with open(self.strInPath + '/bboxes.json') as fd:
+    def _doMakeVOC(self, strInPath, maxCnt=1E7, callback=None, isTarOnly=True):
+        if path.exists(strInPath):
+            with open(strInPath + '/bboxes.json') as fd:
                 self.lstBBoxes = json.load(fd)
         else:
             return -1
-        if path.exists(self.strOutPath):
-            rmtree(self.strOutPath)
-        os.makedirs(path.join(self.strOutPath, "JPEGImages"))
-        os.makedirs(path.join(self.strOutPath, "Annotations"))
+        outPath = './outs/voc_%s' % (strInPath.split('/')[-1])
+        if path.exists(outPath):
+            rmtree(outPath)
+        os.makedirs(path.join(outPath, "JPEGImages"))
+        os.makedirs(path.join(outPath, "Annotations"))
         cur_path = os.getcwd()
         
         cnt = 0
         total = len(self.lstBBoxes)
 
         os.chdir('./outs')
-        sTarFolder = 'wf_voc_%s_%s' % (self.setSel, self.cntSel)
+        sTarFolder = 'voc_%s' % (strInPath.split('/')[-1])
         tarf = tarfile.TarFile(sTarFolder + '.tar', 'w')
         os.chdir(cur_path)
 
@@ -75,7 +81,7 @@ class WF2VOC():
             sFileName = path.split(item['filename'])[1]
             sMainName = path.splitext(sFileName)[0]
             img = cv2.imread(self.strRootPath + '/' + item['filename'])
-            sOutJpgPath = '%s/JPEGImages/%s.jpg' % (self.strOutPath, sMainName)
+            sOutJpgPath = '%s/JPEGImages/%s.jpg' % (outPath, sMainName)
             
             cv2.imwrite(sOutJpgPath, img, [int(cv2.IMWRITE_JPEG_QUALITY),70])
             
@@ -84,13 +90,13 @@ class WF2VOC():
             os.chdir(cur_path)
             if isTarOnly:
                 os.remove(sOutJpgPath)
-            strOutFrame = strPatten % (self.setSel, self.cntSel, sFileName, img.shape[0], img.shape[1])
+            strOutFrame = strPatten % (self.setSel, self.subsetSel, sFileName, img.shape[0], img.shape[1])
             for xyxy in item['xyxys']:
                 strVocBox = strObj % (xyxy[4], xyxy[0], xyxy[1], xyxy[2], xyxy[3])
                 strOutFrame += strVocBox
             strOutFrame += '</annotation>\n'
             
-            sOutXmlPath = '%s/Annotations/%s.xml' % (self.strOutPath, sMainName)
+            sOutXmlPath = '%s/Annotations/%s.xml' % (outPath, sMainName)
             with open(sOutXmlPath, 'w') as fd:
                 fd.write(strOutFrame)
             os.chdir('./outs')
@@ -100,18 +106,22 @@ class WF2VOC():
                 os.remove(sOutXmlPath)
             cnt += 1
             if callback is not None:
-                callback(100 * cnt / total)
+                callback(100 * cnt / total, 'processing %s' % strInPath)
             if cnt >= maxCnt:
                 break
        
         tarf.close()
         if isTarOnly:
-            shutil.rmtree(self.strOutPath)
+            shutil.rmtree(outPath)
         return cnt
 
-    def ScanAndDelInvalidBBoxEntries(self, maxCnt=1E7, callback=None):
-        if path.exists(self.strInPath):
-            with open(self.strInPath + '/bboxes.json') as fd:
+    def MakeVOC(self, maxCnt=1E7, callback=None, isTarOnly=True):
+        for strPath in self.lstInPaths:
+            self._doMakeVOC(strPath, maxCnt, callback, isTarOnly)
+
+    def _doScanAndDelInvalidBBoxEntries(self, strInPath, maxCnt=1E7, callback=None):
+        if path.exists(strInPath):
+            with open(strInPath + '/bboxes.json') as fd:
                 self.lstBBoxes = json.load(fd)
         else:
             return -1
@@ -129,7 +139,9 @@ class WF2VOC():
                 self.lstBBoxes = lstNewBBoxes
                 json.dump(lstNewBBoxes, fd)
         return cnt
-
+    def ScanAndDelInvalidBBoxEntries(self, maxCnt=1E7, callback=None):
+        for strPath in self.lstInPaths:
+            self._doScanAndDelInvalidBBoxEntries(strPath, maxCnt, callback)
 if __name__ == '__main__':
     tester = WF2VOC('train','multi')
     tester.MakeVOC(50)
