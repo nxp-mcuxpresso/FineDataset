@@ -62,20 +62,35 @@ class WF2VOC():
                 self.lstBBoxes = json.load(fd)
         else:
             return -1
+
+        cur_path = os.getcwd()
+        t1 = os.stat(strInPath).st_mtime
+        
+        os.chdir('./outs')
+        sTarFolder = 'voc_%s' % (strInPath.split('/')[-1])
+        if path.exists(sTarFolder + '.tar'):
+            t0 = os.stat(sTarFolder + '.tar').st_mtime
+        else:
+            t0 = 0
+    
+        if t1 < t0:
+            # tar文件比目录时间要新，无需制作
+            os.chdir(cur_path)         
+            return 0
+
+        tarf = tarfile.TarFile(sTarFolder + '.tar', 'w')
+        os.chdir(cur_path)
+        
         outPath = './outs/voc_%s' % (strInPath.split('/')[-1])
         if path.exists(outPath):
             rmtree(outPath)
         os.makedirs(path.join(outPath, "JPEGImages"))
         os.makedirs(path.join(outPath, "Annotations"))
-        cur_path = os.getcwd()
+        
         
         cnt = 0
         total = len(self.lstBBoxes)
 
-        os.chdir('./outs')
-        sTarFolder = 'voc_%s' % (strInPath.split('/')[-1])
-        tarf = tarfile.TarFile(sTarFolder + '.tar', 'w')
-        os.chdir(cur_path)
 
         for item in self.lstBBoxes:
             sFileName = path.split(item['filename'])[1]
