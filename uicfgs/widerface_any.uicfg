@@ -1,0 +1,33 @@
+{
+    "version": "2022.02.07",
+    "savePath": "Q:/gitrepos/subdataset/uicfgs/widerface_any.uicfg",
+    "DSType": "Wider Face",
+    "DSTypeNdx": 5,
+    "DSSubset": "any",
+    "DSSubsetNdx": 2,
+    "IsDSAutoLoad": true,
+    "MinHvsW": "0.9",
+    "MaxHvsW": "1.9",
+    "MinGTPerImg": "1",
+    "MaxGTPerImg": "50",
+    "IsSkipDirtyImage": false,
+    "MinAreaRate": "8.83% ^2",
+    "MaxAreaRate": "100.% ^2",
+    "MinAreaRateNdx": 12,
+    "MaxAreaRateNdx": 0,
+    "MinCloseRate": "19.6%",
+    "MinCloseRateNdx": 5,
+    "MaxObjsPerCluster": "2",
+    "MaxObjsPerClusterNdx": 8,
+    "IsAllowMore": true,
+    "txtOutY": "128",
+    "txtOutX": "128",
+    "txtOutN": "100",
+    "IsSkipDirtyPatch": true,
+    "IsOutHasTmStmp": false,
+    "nextDSFolder": "Q:/datasets/wider_face",
+    "rndNdx": 432,
+    "allowedTags": [
+        "face"
+    ]
+}

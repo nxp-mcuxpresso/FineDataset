@@ -453,7 +453,7 @@ class Patcher():
     CutPatches: 切割出包含一簇人脸的图片
     '''
     def CutClusterPatches(self, strOutFolder, patchNdx, scalers=[1.00, 0.8], outWH = [96, 128], \
-            ndx=-1, strFile='', maxObjPerCluster=10, isAllowMorePerPatch=True, 
+            ndx=-1, strFile='', maxObjPerCluster=10, isAllowMorePerPatch=True, isSkipDirtyPatch=True, 
             minCloseRate=0.333, areaRateRange=[0,1], maxPatchPerImg=25, allowedTags=['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
@@ -549,7 +549,7 @@ class Patcher():
             bbox = pat[3]
                        
             aspectErr = bbox['w']/ bbox['h'] / wVsH
-            if aspectErr > 5.0 or aspectErr < 0.2:
+            if aspectErr > 25.0 or aspectErr < 0.04:
                 skipBadAspectCnt += len(pat[0])
                 continue
             # 留下比较大margin的scaler多试几次，每次都有随机性
@@ -601,11 +601,10 @@ class Patcher():
                 boxCnt = 0
                 gtNewUsedCnts = np.zeros(len(item['xywhs']))
                 for (i, subBox) in enumerate(item['xywhs']):
-                    if not isAllowMorePerPatch and boxCnt >= len(pat[0]):
-                        break
                     if not subBox['tag'] in allowedTags:
                         if '*' != allowedTags[0]:
-                            continue                    
+                            continue
+                   
                     # 去除经过剪裁后已经位于外面的物体框
                     gtW = subBox['w']
                     gtH = subBox['h']
@@ -640,14 +639,24 @@ class Patcher():
                                 # 被剪裁的物体太大，很可能有大部分残留在子块区域中，
                                 # 会对训练产生明显不良影响，所以宁可放弃这个子块
                                 lstBBxyxys = []
-                                isAbandonThisPatch = True
+                                # isAbandonThisPatch = True
                                 break
                             newSkipOutBoundCnt += 1 
                             continue
+                    # 落入子块中的物体，检查是不是dirty的
+                    if isSkipDirtyPatch and subBox['dirty'] != 0:
+                        lstBBxyxys = []
+                        # isAbandonThisPatch = True
+                        break                         
                     areaRate = clipW * clipH / w2 / h2
                     if areaRate < areaRateRange[0] or areaRate > areaRateRange[1]:
                         newSkipBadSizeCnt += 1
                         continue
+
+                    if not isAllowMorePerPatch and boxCnt >= len(pat[0]):
+                        lstBBxyxys = []
+                        break
+
                     areaIJ += clipW * clipH
                     [ptx1, ptx2] = [int(x * outWH[0] / w2 + 0.5) for x in [ptx1, ptx2]]
                     [pty1, pty2] = [int(x * outWH[1] / h2 + 0.5) for x in [pty1, pty2]]
@@ -656,7 +665,7 @@ class Patcher():
                     if pty2 >= outWH[1]:
                         pty2 = outWH[1] - 1
                     # cv2.rectangle(img, (ptx1, pty1), (ptx2, pty2), (0,255,0), 1, 4)
-                    
+               
                     # 每个GT框最多使用3次
                     if gtUsedCnts[i] >= 3:
                         lstBBxyxys = []
@@ -718,8 +727,8 @@ class Patcher():
     '''
     CutPatches: 切割出只包含一个人脸GT框的图片
     '''
-    def CutPatches(self, strOutFolder, patchNdx, scalers=[0.8, 0.6, 0.45], areaRateRange=[0, 1], outWH = [96,128], ndx=-1, strFile='', \
-        maxPatchPerImg=32, allowedTags = ['*'], dbgSkips=[]):
+    def CutPatches(self, strOutFolder, patchNdx, scalers=[0.8, 0.6, 0.45], areaRateRange=[0, 1], outWH = [96,128], \
+        ndx=-1, strFile='', isSkipDirtyPatch=True, maxPatchPerImg=32, allowedTags = ['*'], dbgSkips=[]):
         if ndx >= 0:
             strFile = list(self.dctFiles.keys())[ndx]
         item = self.dctFiles[strFile]
@@ -740,7 +749,9 @@ class Patcher():
         for bbox in lstXYWH:
             if not bbox['tag'] in allowedTags:
                 if '*' != allowedTags[0]:
-                    continue            
+                    continue
+            if isSkipDirtyPatch == True and bbox['dirty'] != 0:
+                continue 
             w  = bbox['w']
             h = bbox['h']
             x1 = bbox['x1']
@@ -835,11 +846,14 @@ class Patcher():
                 drawedCnt += 1
                 pt1 = (bbox['x1'], bbox['y1'])
                 pt2 = (bbox['x1'] + bbox['w'] , bbox['y1'] + bbox['h'])
-                col = (bbox['isOverIllumination'] * 255,191,bbox['occlusion'] * 255)
-                cv2.rectangle(img, pt1, pt2, col, width, 4)
+
+                bgr = (bbox['isOverIllumination'] * 255,223,bbox['occlusion'] * 255)
+                if bbox['dirty'] != 0:
+                    bgr = (bgr[0]/2, bgr[1]/2, bgr[2]/2)
+                cv2.rectangle(img, pt1, pt2, bgr, width, 4)
                 pt1 = (pt1[0], pt1[1]+15)
                 cv2.putText(img, '%s,%d' % (bbox['tag'],  i) \
-                    , pt1, cv2.FONT_HERSHEY_PLAIN, width, col)
+                    , pt1, cv2.FONT_HERSHEY_PLAIN, width, bgr)
         if isShow:
             cv2.imshow("OpenCV",img)
             cv2.waitKey()

@@ -86,7 +86,7 @@
       </font>
      </property>
      <property name="text">
-      <string>合并到至少几个物体</string>
+      <string>合并至少几个邻近物体</string>
      </property>
     </widget>
     <widget class="QComboBox" name="cmbMaxObjsPerCluster">
@@ -347,7 +347,7 @@
       </font>
      </property>
      <property name="text">
-      <string>允许更多</string>
+      <string>允许更密集</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -380,7 +380,7 @@
       <string extracomment="脏表示包含了不符合条件的物体"/>
      </property>
      <property name="text">
-      <string>跳过&quot;脏&quot;子块</string>
+      <string>只包含符合约束的物体</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -721,7 +721,7 @@
       <rect>
        <x>10</x>
        <y>200</y>
-       <width>91</width>
+       <width>141</width>
        <height>21</height>
       </rect>
      </property>
@@ -743,7 +743,7 @@
       <string extracomment="脏表示包含了不符合条件的物体"/>
      </property>
      <property name="text">
-      <string>跳过&quot;脏&quot;图</string>
+      <string>只读取符合约束的图</string>
      </property>
      <property name="checked">
       <bool>true</bool>

@@ -143,6 +143,7 @@ class MainAppLogic():
         if path.exists('./uicfgs/_ui_cfg_auto.uicfg'):
             cfgDct = self.LoadCfgDict()
             self.uiCfgFile = './uicfgs/_ui_cfg_auto.uicfg'
+            mainUI.menuSaveConfig.setText('Save Config (%s)' % self.uiCfgFile)
         else:
             self.uiCfgFile = ''        
             if ui.chkAutoload.isChecked():
@@ -154,6 +155,7 @@ class MainAppLogic():
             if path.exists(lstPaths[0]):
                 self.LoadCfgDict(lstPaths[0])
                 self.uiCfgFile = lstPaths[0]
+                mainUI.menuSaveConfig.setText('Save Config (%s)' % self.uiCfgFile)
 
     def OnTriggered_MenuSaveUiCfgAs(self, strPath = ''):
         if len(strPath) < 1:
@@ -163,9 +165,13 @@ class MainAppLogic():
         if len(lstPaths) == 2 and len(lstPaths[0]) > 0:
             self.SaveCfgDict(lstPaths[0])
             self.uiCfgFile = lstPaths[0]
+            mainUI.menuSaveConfig.setText('Save Config (%s)' % self.uiCfgFile)
 
     def SaveCfgDict(self, savePath = './uicfgs/_ui_cfg_auto.uicfg'):
+        mainName = path.split(savePath)[1]
         dctRet = {
+            'version': '2022.02.07',
+            'savePath': savePath,
             'DSType' : mainUI.cmbDSType.currentText(),
             'DSTypeNdx' : mainUI.cmbDSType.currentIndex(),
             'DSSubset': mainUI.cmbSubSet.currentText(),
@@ -181,7 +187,7 @@ class MainAppLogic():
             'MaxAreaRate' : mainUI.cmbMaxAreaRate.currentText(),
             'MinAreaRateNdx': mainUI.cmbMinAreaRate.currentIndex(),
             'MaxAreaRateNdx' : mainUI.cmbMaxAreaRate.currentIndex(), 
-            'MinCloseRate': mainUI.cmbMinCloseRate.currentIndex(),
+            'MinCloseRate': mainUI.cmbMinCloseRate.currentText(),
             'MinCloseRateNdx' : mainUI.cmbMinCloseRate.currentIndex(),
             'MaxObjsPerCluster' : mainUI.cmbMaxObjsPerCluster.currentText(),
             'MaxObjsPerClusterNdx' : mainUI.cmbMaxObjsPerCluster.currentIndex(),
@@ -229,9 +235,9 @@ class MainAppLogic():
 
             mainUI.cmbMinAreaRate.setCurrentText(cfgDct['MinAreaRate'])
             mainUI.cmbMaxAreaRate.setCurrentText(cfgDct['MaxAreaRate'])
+            mainUI.cmbMinCloseRate.setCurrentText(cfgDct['MinCloseRate'])
             if mainUI.cmbMinAreaRate.currentIndex() != (cfgDct['MinAreaRateNdx']): print('index changed!')
             if mainUI.cmbMaxAreaRate.currentIndex() != (cfgDct['MaxAreaRateNdx']): print('index changed!') 
-            if mainUI.cmbMinCloseRate.currentIndex() != (cfgDct['MinCloseRate']): print('index changed!')
             if mainUI.cmbMinCloseRate.currentIndex() != (cfgDct['MinCloseRateNdx']): print('index changed!')
             mainUI.cmbMaxObjsPerCluster.setCurrentText(cfgDct['MaxObjsPerCluster'])
             if mainUI.cmbMaxObjsPerCluster.currentIndex() != (cfgDct['MaxObjsPerClusterNdx']): print('index changed!')
@@ -471,13 +477,17 @@ class MainAppLogic():
             self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
             if singleStr == 'multi':
                 self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(
-                    strOutFolder, self.patchNdx, ndx=ndx, minCloseRate=minClose, maxObjPerCluster=maxObjPerCluster, 
-                    isAllowMorePerPatch=mainUI.chkAllowMoreObj.isChecked(), maxPatchPerImg=maxPatchPerImg,
+                    strOutFolder, self.patchNdx, ndx=ndx, minCloseRate=minClose, 
+                    maxObjPerCluster=maxObjPerCluster, 
+                    isAllowMorePerPatch=mainUI.chkAllowMoreObj.isChecked(), 
+                    isSkipDirtyPatch=mainUI.chkSkipDirtyPatch.isChecked(),
+                    maxPatchPerImg=maxPatchPerImg,
                     areaRateRange=[minAreaRate, maxAreaRate], outWH=[outW, outH], allowedTags=lstAllowed,
                     dbgSkips=dbgSkips)
             else:
                 self.patchNdx, lstPatches = self.dataObj.CutPatches(
                     strOutFolder, self.patchNdx, ndx=ndx, outWH=[outW, outH], 
+                    isSkipDirtyPatch=mainUI.chkSkipDirtyPatch.isChecked(),
                     areaRateRange=[minAreaRate, maxAreaRate], allowedTags=lstAllowed,
                     dbgSkips=dbgSkips)
 
@@ -712,7 +722,8 @@ class MyQMainWindow(QMainWindow):
         mainLogic.SaveCfgDict()
         if mainLogic.uiCfgFile != '':
             mainLogic.SaveCfgDict(mainLogic.uiCfgFile)
-        
+        else:
+            mainLogic.uiCfgFile = './uicfgs/_ui_cfg_auto.uicfg'
 
 if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
