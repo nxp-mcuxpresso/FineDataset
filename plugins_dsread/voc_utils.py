@@ -203,6 +203,13 @@ class VOCUtils(abstract_utils.AbstractUtils):
                 print(e)
                 traceback.print_exc()
                 raise e
+
+        k2 = sorted(self.dctFiles.keys())
+        dctRet = {}
+        for (i,k) in enumerate(k2):
+            dctRet[k] = self.dctFiles[k]
+        self.dctFiles = dctRet
+
         t2 = time.time()
         dt = (t2 - t1)
         bkpt = 0

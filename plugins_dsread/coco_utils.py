@@ -194,13 +194,13 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
             # 检查是否含有脏标注
             if isSkipDirtyImg == True:
                 for xywh in item['xywhs']:
-                    if xywh['isDirty'] > 0:
+                    if xywh['dirty'] > 0:
                         isToSkipImg = True
                         break
             else:
                 xywhs2 = []
                 for xywh in item['xywhs']:
-                    if xywh['isDirty'] == 0:
+                    if xywh['dirty'] == 0:
                         xywhs2.append(xywh)
                 item['xywhs'] = xywhs2
             if isToSkipImg == True:
@@ -220,8 +220,16 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
                             self.dctTags[tag] += 1
                         except:
                             self.dctTags[tag] = 1                         
+
         dt = time.time() - t0
         self.dctFiles = dctFilt
+
+        k2 = sorted(self.dctFiles.keys())
+        dctRet = {}
+        for (i,k) in enumerate(k2):
+            dctRet[k] = self.dctFiles[k]
+        self.dctFiles = dctRet
+
         bkpt = 0
     def DelTag(self, sTag:str):
         for dctItem in self.dctFiles:

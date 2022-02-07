@@ -86,6 +86,12 @@ class SubdatasetUtils(abstract_utils.AbstractUtils):
                         'cnt': len(xywhsOut),
                         'xywhs' : xywhsOut
                     }
+
+        k2 = sorted(self.dctFiles.keys())
+        dctRet = {}
+        for (i,k) in enumerate(k2):
+            dctRet[k] = self.dctFiles[k]
+        self.dctFiles = dctRet
         bkpt = 0
     
     def IsFixedSizeImg(self):

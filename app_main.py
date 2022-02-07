@@ -5,6 +5,10 @@ import PyQt5
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QCheckBox, QWidget, QApplication, QMainWindow, QMessageBox, QStatusBar, QFileDialog, QInputDialog
 from PyQt5.QtCore import Qt
+try:
+    import qdarkstyle
+except:
+    pass
 from numpy.lib.type_check import isreal
 import widertools
 import json
@@ -32,6 +36,7 @@ class MainAppLogic():
         self.strOutFolder = '' # 子块数据集的输出目录
         self.chkTags = []  # 记录动态生成的表示类别名称和实例数量的复选框
         self.nextDSFolder = 'q:/datasets/wider_face'
+
         self.rndNdx = 2305
         self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
         # 搜索 xxx_utils.py
@@ -57,26 +62,14 @@ class MainAppLogic():
         # ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
         ui.cmbDSType.setCurrentIndex(pluginCnt - 1)
         ui.cmbSubSet.addItems(['train','val', 'any'])
-        ui.cmbMaxFacesPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
-        ui.cmbMaxFacesPerCluster.setCurrentIndex(8)
+        ui.cmbMaxObjsPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
+        ui.cmbMaxObjsPerCluster.setCurrentIndex(8)
         #ui.cmbMinCloseRate.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         #ui.cmbMinCloseRate.setCurrentIndex(3)
-        
-        def GenCfgDict(self):
-            dctRet = {
-                'DSTypeStr' : mainUI.cmbDSType.currentText(),
-                'DSTypeNdx' : mainUI.cmbDSType.currentIndex(),
-                'DSSubsetStr': mainUI.cmbSubSet.currentText(),
-                'DSSubsetNdx' : mainUI.cmbSubSet.currentIndex(),
-                'IsDSAutoLoad' : mainUI.chkAutoload.isChecked(),
-                'MinHvsW' : mainUI.txtMinHvsW.text(),
-                'MaxHvsW' : mainUI.txtMaxHvsW.text(),
-                'MinGTPerImg' : mainUI.txtMinGTPerImg.text(),
-                'MaxGTPerImg' : mainUI.txtMaxGTPerImg.text(),
-                'MinAreaRate': mainUI.cmbMinAreaRate.currentText(),
-                'DSSubsetNdx' : mainUI.cmbSubSet.currentIndex(),
 
-            }
+            
+        #else:
+        #    self.SaveCfgDict()
 
         def CalcCmbValues(minVal, maxVal, step, isSquare=False):
             curVal = maxVal
@@ -121,9 +114,9 @@ class MainAppLogic():
         ui.btnToVoc.clicked.connect(lambda :self.OnClicked_ScanAndMayExportVOC())
         ui.btnRefreshLabels.clicked.connect(lambda :self.OnClicked_ScanAndMayExportVOC(isToMakeVOC=False))
         
-        ui.menuLoadConfig.setEnabled(False)
-        ui.menuSaveConfig.setEnabled(False)
-        ui.menuSaveConfigAs.setEnabled(False)
+        ui.menuLoadConfig.triggered.connect(lambda: self.OnTriggered_MenuLoadUiCfg())
+        ui.menuSaveConfigAs.triggered.connect(lambda: self.OnTriggered_MenuSaveUiCfgAs())        
+        ui.menuSaveConfig.triggered.connect(lambda: self.OnTriggered_MenuSaveUiCfgAs(strPath=self.uiCfgFile))
         
         ui.menuAboxTool.triggered.connect(lambda: self.LaunchABoxToolInNewProcess())
         ui.menuDbgGenMultiForCurrent.triggered.connect(lambda: self.OnClicked_GenPatchDataset(ndcIn=[self.rndNdx]))
@@ -138,16 +131,126 @@ class MainAppLogic():
         ui.tmrToHidePgsBar.setSingleShot(True)
         ui.tmrToHidePgsBar.timeout.connect(self.OnTimeout_tmrToHidePgsBar)
         ui.statusBar = QStatusBar()
-        mainWindow.setStatusBar(ui.statusBar)
+        MainWindow.setStatusBar(ui.statusBar)
         ui.statusBar.addPermanentWidget(ui.pgsBar)
         #ui.btnValidateMultiFaceDataSet.clicked.connect(self.OnClicked_ValidateSingleFaceDataset)
 
         # ui.btnGenMultiFaceDataSet.setEnabled(False)
         # ui.btnValidateMultiFaceDataSet.setEnabled(False)
-        # ui.cmbMaxFacesPerCluster.setEnabled(False)
+        # ui.cmbMaxObjsPerCluster.setEnabled(False)
         ui.btnSaveOriBBoxes.clicked.connect(self.OnClicked_SaveOriBBoxes)
-        if ui.chkAutoload.isChecked():
-            self.LoadDataset('q:/datasets/wider_face')
+        if path.exists('_ui_cfg_auto.uicfg'):
+            cfgDct = self.LoadCfgDict()
+            self.uiCfgFile = '_ui_cfg_auto.uicfg'
+        else:
+            self.uiCfgFile = ''        
+            if ui.chkAutoload.isChecked():
+                self.LoadDataset(self.nextDSFolder)
+    
+    def OnTriggered_MenuLoadUiCfg(self):
+        lstPaths = QFileDialog.getOpenFileName(MainWindow, '读取UI配置', './', 'UICFG(*.uicfg)')
+        if len(lstPaths) > 1:
+            if path.exists(lstPaths[0]):
+                self.LoadCfgDict(lstPaths[0])
+                self.uiCfgFile = lstPaths[0]
+
+    def OnTriggered_MenuSaveUiCfgAs(self, strPath = ''):
+        if len(strPath) < 1:
+            lstPaths = QFileDialog.getSaveFileName(MainWindow, '保存UI配置', './', 'UICFG(*.uicfg)')
+        else:
+            lstPaths = [strPath, 'JSON(*.json)']
+        if len(lstPaths) == 2 and len(lstPaths[0]) > 0:
+            self.SaveCfgDict(lstPaths[0])
+            self.uiCfgFile = lstPaths[0]
+
+    def SaveCfgDict(self, savePath = '_ui_cfg_auto.uicfg'):
+        dctRet = {
+            'DSType' : mainUI.cmbDSType.currentText(),
+            'DSTypeNdx' : mainUI.cmbDSType.currentIndex(),
+            'DSSubset': mainUI.cmbSubSet.currentText(),
+            'DSSubsetNdx' : mainUI.cmbSubSet.currentIndex(),
+            'IsDSAutoLoad' : mainUI.chkAutoload.isChecked(),
+            'MinHvsW' : mainUI.txtMinHvsW.text(),
+            'MaxHvsW' : mainUI.txtMaxHvsW.text(),
+            'MinGTPerImg' : mainUI.txtMinGTPerImg.text(),
+            'MaxGTPerImg' : mainUI.txtMaxGTPerImg.text(),
+            'IsSkipDirtyImage' : mainUI.chkSkipDirtyImage.isChecked(),
+
+            'MinAreaRate': mainUI.cmbMinAreaRate.currentText(),
+            'MaxAreaRate' : mainUI.cmbMaxAreaRate.currentText(),
+            'MinAreaRateNdx': mainUI.cmbMinAreaRate.currentIndex(),
+            'MaxAreaRateNdx' : mainUI.cmbMaxAreaRate.currentIndex(), 
+            'MinCloseRate': mainUI.cmbMinCloseRate.currentIndex(),
+            'MinCloseRateNdx' : mainUI.cmbMinCloseRate.currentIndex(),
+            'MaxObjsPerCluster' : mainUI.cmbMaxObjsPerCluster.currentText(),
+            'MaxObjsPerClusterNdx' : mainUI.cmbMaxObjsPerCluster.currentIndex(),
+            'IsAllowMore' : mainUI.chkAllowMoreObj.isChecked(),
+            'txtOutY' : mainUI.txtOutY.text(),
+            'txtOutX' : mainUI.txtOutX.text(),
+            'txtOutN' : mainUI.txtOutN.text(),
+            'IsSkipDirtyPatch' : mainUI.chkSkipDirtyPatch.isChecked(),
+
+            'IsOutHasTmStmp' : mainUI.chkOutHasTmStmp.isChecked(),
+
+            'nextDSFolder' : self.nextDSFolder,
+            'rndNdx' : self.rndNdx
+        }
+
+        lstTags = []
+        for item in self.chkTags:
+            chk = item[0]
+            if chk.isChecked():
+                oriText = chk.text()
+                lstTags.append(oriText.split(':')[0].strip())
+        dctRet['allowedTags'] = lstTags
+
+        if savePath != '':
+            with open(savePath, 'w') as fd:
+                json.dump(dctRet, fd, indent=4)
+        return dctRet
+
+    def LoadCfgDict(self, loadPath = '_ui_cfg_auto.uicfg', isApply=True):
+        if not path.exists(loadPath):
+            return -1
+        with open(loadPath) as fd:
+            cfgDct = json.load(fd)
+        if isApply:
+            mainUI.cmbDSType.setCurrentText(cfgDct['DSType'])
+            if mainUI.cmbDSType.currentIndex() != (cfgDct['DSTypeNdx']): print('index changed!')
+            mainUI.cmbSubSet.setCurrentText(cfgDct['DSSubset'])
+            if mainUI.cmbSubSet.currentIndex() != (cfgDct['DSSubsetNdx']): print('index changed!')
+            mainUI.chkAutoload.setChecked(cfgDct['IsDSAutoLoad'])
+            mainUI.txtMinHvsW.setText(cfgDct['MinHvsW'])
+            mainUI.txtMaxHvsW.setText(cfgDct['MaxHvsW'])
+            mainUI.txtMinGTPerImg.setText(cfgDct['MinGTPerImg'])
+            mainUI.txtMaxGTPerImg.setText(cfgDct['MaxGTPerImg'])
+            mainUI.chkSkipDirtyImage.setChecked(cfgDct['IsSkipDirtyImage'])
+
+            mainUI.cmbMinAreaRate.setCurrentText(cfgDct['MinAreaRate'])
+            mainUI.cmbMaxAreaRate.setCurrentText(cfgDct['MaxAreaRate'])
+            if mainUI.cmbMinAreaRate.currentIndex() != (cfgDct['MinAreaRateNdx']): print('index changed!')
+            if mainUI.cmbMaxAreaRate.currentIndex() != (cfgDct['MaxAreaRateNdx']): print('index changed!') 
+            if mainUI.cmbMinCloseRate.currentIndex() != (cfgDct['MinCloseRate']): print('index changed!')
+            if mainUI.cmbMinCloseRate.currentIndex() != (cfgDct['MinCloseRateNdx']): print('index changed!')
+            mainUI.cmbMaxObjsPerCluster.setCurrentText(cfgDct['MaxObjsPerCluster'])
+            if mainUI.cmbMaxObjsPerCluster.currentIndex() != (cfgDct['MaxObjsPerClusterNdx']): print('index changed!')
+            mainUI.chkAllowMoreObj.setChecked(cfgDct['IsAllowMore'])
+            mainUI.txtOutY.setText(cfgDct['txtOutY'])
+            mainUI.txtOutX.setText(cfgDct['txtOutX'])
+            mainUI.txtOutN.setText(cfgDct['txtOutN'])
+            mainUI.chkSkipDirtyPatch.setChecked(cfgDct['IsSkipDirtyPatch'])
+
+            mainUI.chkOutHasTmStmp.setChecked(cfgDct['IsOutHasTmStmp'])
+            self.nextDSFolder = cfgDct['nextDSFolder']
+            
+            # Following sentences can depend on self.cfgDct
+            self.cfgDct = cfgDct
+            
+            if mainUI.chkAutoload.isChecked():
+                # if self.nextDSFolder != self.dsFolder:
+                self.LoadDataset(self.nextDSFolder)
+        return cfgDct
+
     def DelTags(self):
         self.dataObj.FilterTags(self.GetDisallowedTags())
         self.UpdateDataset(self.provider, self.dsFolder, dsType = mainUI.cmbDSType.currentText())
@@ -157,16 +260,19 @@ class MainAppLogic():
         sp.Popen('python ./abox_tools/abox_main.py', shell=True)
         #sp.call(["python", "./abox_tools/abox_main.py", ' '.join(sys.argv)], shell = True)
 
+    def ShowAt(self, ndx):
+        try:
+            [table, strKey, _,  ndx] = self.dataObj.ShowAt(ndx, False, allowedTags=self.GetAllowedTags())
+            self.ui.statusBar.showMessage('显示指定编号%d, 图片%s' % (ndx, strKey))
+            self.ShowImage(table, strKey)        
+            self.rndNdx = ndx
+        except:
+            self.ui.statusBar.showMessage('无效的图片号%d' % (ndx))
+    
     def OnMenuTriggered_SpecifyImageNdx(self):
         ndx, isOK = QInputDialog.getInt(MainWindow, '设置当前图片索引', '请输入索引：', min = 0) 
         if isOK:
-            try:
-                [table, strKey, _,  ndx] = self.dataObj.ShowAt(ndx, False, allowedTags=self.GetAllowedTags())
-                self.ui.statusBar.showMessage('显示指定编号%d, 图片%s' % (ndx, strKey))
-                self.ShowImage(table, strKey)        
-                self.rndNdx = ndx
-            except:
-                self.ui.statusBar.showMessage('无效的图片号%d' % (ndx))
+            self.ShowAt(ndx)
 
     def SetEnableStateBaseedOnDatasetAvailibiblity(self,isEn):
             self.ui.btnRandom.setEnabled(isEn)
@@ -180,7 +286,7 @@ class MainAppLogic():
             self.ui.btnTagSelInv.setEnabled(isEn)
             self.ui.btnValidateSingleFaceDataSet.setEnabled(isEn)
             self.ui.btnValidateMultiFaceDataSet.setEnabled(isEn)
-            self.ui.btnOriImg.setEnabled(isEn)        
+            self.ui.btnOriImg.setEnabled(isEn)
 
     def OnTimeout_tmrToHidePgsBar(self):
         self.ui.pgsBar.setVisible(False)
@@ -344,10 +450,10 @@ class MainAppLogic():
         self.lstPatches = []
         self.ui.pgsBar.setValue(1)
         self.ui.pgsBar.setVisible(True)        
-        dsSize = int(self.ui.txtDatasetSize.text())
+        dsSize = int(self.ui.txtOutN.text())
         if not path.exists(strOutFolder):
             os.makedirs(strOutFolder)
-        maxObjPerCluster = int(self.ui.cmbMaxFacesPerCluster.currentText())
+        maxObjPerCluster = int(self.ui.cmbMaxObjsPerCluster.currentText())
         minAreaRate = (float(self.ui.cmbMinAreaRate.currentText()[:4]) / 100.0) ** 2
         maxAreaRate = (float(self.ui.cmbMaxAreaRate.currentText()[:4]) / 100.0) ** 2  
 
@@ -497,7 +603,7 @@ class MainAppLogic():
                 if lineLen > maxLineLen:
                     maxLineLen = lineLen
                 chk.setChecked(True)
-                chk.isChecked()                
+                chk.isChecked() 
                 self.chkTags.append([chk, chk.text()])
                 self.chkTags.sort(key=lambda x:x[1], reverse=False)
             if len(self.chkTags) == 1:
@@ -505,7 +611,19 @@ class MainAppLogic():
             for (i, item) in enumerate(self.chkTags):
                 item[0].move(4, 5 + i * 20)
             topFiller.setMinimumSize(8*maxLineLen, len(self.chkTags) * 20)
-            mainUI.scrollTags.setWidget(topFiller)        
+            mainUI.scrollTags.setWidget(topFiller)
+
+            # 根据上次保存的配置来设置各checkbox的选中状态
+            cfgDct = self.cfgDct
+            if cfgDct['nextDSFolder'] == dsFolder:
+                self.ShowAt(cfgDct['rndNdx'])
+                if 'allowedTags' in cfgDct.keys():
+                    for chk in self.chkTags:
+                        oriText = chk[1]
+                        tag = oriText.split(':')[0].strip()
+                        chk[0].setChecked(tag in cfgDct['allowedTags'])
+
+            
     
     def LoadDataset(self, dsFolder, isForced=False):
         # QMessageBox.information(None,'box',ui.cmbSubSet.currentText())
@@ -578,11 +696,32 @@ class MainAppLogic():
         self.UpdateDataset(provider, dsFolder, dsType)
         self.ui.pgsBar.setValue(100)
         self.ui.tmrToHidePgsBar.start()
+
+class MyMainUI(widertools.Ui_MainWindow):
+    def __init__(self):
+        super(MyMainUI, self).__init__()
+
+class MyQMainWindow(QMainWindow):
+    def __init__(self):
+        super(MyQMainWindow, self).__init__()
+    def closeEvent(self, closeEvent: QtGui.QCloseEvent):
+        print('saving UI configuration')
+        # 先使用默认自动保存文件保存配置
+        mainLogic.SaveCfgDict()
+        if mainLogic.uiCfgFile != '':
+            mainLogic.SaveCfgDict(mainLogic.uiCfgFile)
+        
+
 if __name__ == '__main__':
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
-    MainWindow = QMainWindow()
-    ui = widertools.Ui_MainWindow()
+    MainWindow = MyQMainWindow()
+    try:
+        pass
+        #app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyqt5'))
+    except:
+        pass
+    ui = MyMainUI()
     ui.setupUi(MainWindow)
     mainUI = ui
     MainWindow.show()

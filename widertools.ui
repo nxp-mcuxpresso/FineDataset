@@ -89,7 +89,7 @@
       <string>合并到至少几个物体</string>
      </property>
     </widget>
-    <widget class="QComboBox" name="cmbMaxFacesPerCluster">
+    <widget class="QComboBox" name="cmbMaxObjsPerCluster">
      <property name="geometry">
       <rect>
        <x>180</x>
@@ -128,7 +128,7 @@
       <string>生成数量</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="txtDatasetSize">
+    <widget class="QLineEdit" name="txtOutN">
      <property name="geometry">
       <rect>
        <x>290</x>
@@ -1101,7 +1101,6 @@
     <addaction name="menuSaveConfig"/>
     <addaction name="menuSaveConfigAs"/>
     <addaction name="menuLoadConfig"/>
-    <addaction name="actionAuto_Load_last_Config"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -1206,11 +1205,11 @@
   <tabstop>cmbMinAreaRate</tabstop>
   <tabstop>cmbMaxAreaRate</tabstop>
   <tabstop>cmbMinCloseRate</tabstop>
-  <tabstop>cmbMaxFacesPerCluster</tabstop>
+  <tabstop>cmbMaxObjsPerCluster</tabstop>
   <tabstop>chkAllowMoreObj</tabstop>
   <tabstop>txtOutY</tabstop>
   <tabstop>txtOutX</tabstop>
-  <tabstop>txtDatasetSize</tabstop>
+  <tabstop>txtOutN</tabstop>
   <tabstop>scrollTags</tabstop>
   <tabstop>btnGenSingleFaceDataSet</tabstop>
   <tabstop>btnGenMultiFaceDataSet</tabstop>

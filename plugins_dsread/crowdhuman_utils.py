@@ -156,7 +156,12 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
                     'xywhs' : lstPassed
                 }
         
-        
+        k2 = sorted(self.dctFiles.keys())
+
+        dctRet = {}
+        for (i,k) in enumerate(k2):
+            dctRet[k] = self.dctFiles[k]
+        self.dctFiles = dctRet
         bkpt = 0
         
     def MapFile(self, strFile:str):
