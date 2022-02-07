@@ -36,7 +36,8 @@ class MainAppLogic():
         self.strOutFolder = '' # 子块数据集的输出目录
         self.chkTags = []  # 记录动态生成的表示类别名称和实例数量的复选框
         self.nextDSFolder = 'q:/datasets/wider_face'
-
+        if not path.exists('./uicfgs'):
+            os.makedirs('./uicfgs')
         self.rndNdx = 2305
         self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
         # 搜索 xxx_utils.py
@@ -139,16 +140,16 @@ class MainAppLogic():
         # ui.btnValidateMultiFaceDataSet.setEnabled(False)
         # ui.cmbMaxObjsPerCluster.setEnabled(False)
         ui.btnSaveOriBBoxes.clicked.connect(self.OnClicked_SaveOriBBoxes)
-        if path.exists('_ui_cfg_auto.uicfg'):
+        if path.exists('./uicfgs/_ui_cfg_auto.uicfg'):
             cfgDct = self.LoadCfgDict()
-            self.uiCfgFile = '_ui_cfg_auto.uicfg'
+            self.uiCfgFile = './uicfgs/_ui_cfg_auto.uicfg'
         else:
             self.uiCfgFile = ''        
             if ui.chkAutoload.isChecked():
                 self.LoadDataset(self.nextDSFolder)
     
     def OnTriggered_MenuLoadUiCfg(self):
-        lstPaths = QFileDialog.getOpenFileName(MainWindow, '读取UI配置', './', 'UICFG(*.uicfg)')
+        lstPaths = QFileDialog.getOpenFileName(MainWindow, '读取UI配置', './uicfgs', 'UICFG(*.uicfg)')
         if len(lstPaths) > 1:
             if path.exists(lstPaths[0]):
                 self.LoadCfgDict(lstPaths[0])
@@ -156,14 +157,14 @@ class MainAppLogic():
 
     def OnTriggered_MenuSaveUiCfgAs(self, strPath = ''):
         if len(strPath) < 1:
-            lstPaths = QFileDialog.getSaveFileName(MainWindow, '保存UI配置', './', 'UICFG(*.uicfg)')
+            lstPaths = QFileDialog.getSaveFileName(MainWindow, '保存UI配置', './uicfgs', 'UICFG(*.uicfg)')
         else:
             lstPaths = [strPath, 'JSON(*.json)']
         if len(lstPaths) == 2 and len(lstPaths[0]) > 0:
             self.SaveCfgDict(lstPaths[0])
             self.uiCfgFile = lstPaths[0]
 
-    def SaveCfgDict(self, savePath = '_ui_cfg_auto.uicfg'):
+    def SaveCfgDict(self, savePath = './uicfgs/_ui_cfg_auto.uicfg'):
         dctRet = {
             'DSType' : mainUI.cmbDSType.currentText(),
             'DSTypeNdx' : mainUI.cmbDSType.currentIndex(),
@@ -209,7 +210,7 @@ class MainAppLogic():
                 json.dump(dctRet, fd, indent=4)
         return dctRet
 
-    def LoadCfgDict(self, loadPath = '_ui_cfg_auto.uicfg', isApply=True):
+    def LoadCfgDict(self, loadPath = './uicfgs/_ui_cfg_auto.uicfg', isApply=True):
         if not path.exists(loadPath):
             return -1
         with open(loadPath) as fd:
@@ -614,14 +615,15 @@ class MainAppLogic():
             mainUI.scrollTags.setWidget(topFiller)
 
             # 根据上次保存的配置来设置各checkbox的选中状态
-            cfgDct = self.cfgDct
-            if cfgDct['nextDSFolder'] == dsFolder:
-                self.ShowAt(cfgDct['rndNdx'])
-                if 'allowedTags' in cfgDct.keys():
-                    for chk in self.chkTags:
-                        oriText = chk[1]
-                        tag = oriText.split(':')[0].strip()
-                        chk[0].setChecked(tag in cfgDct['allowedTags'])
+            if hasattr(self, 'cfgDct'):
+                cfgDct = self.cfgDct
+                if cfgDct['nextDSFolder'] == dsFolder:
+                    self.ShowAt(cfgDct['rndNdx'])
+                    if 'allowedTags' in cfgDct.keys():
+                        for chk in self.chkTags:
+                            oriText = chk[1]
+                            tag = oriText.split(':')[0].strip()
+                            chk[0].setChecked(tag in cfgDct['allowedTags'])
 
             
     
