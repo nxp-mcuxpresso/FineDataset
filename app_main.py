@@ -607,6 +607,7 @@ class MainAppLogic():
             topFiller = QWidget()
             dctTag = self.provider.GetTagDict()
             maxLineLen = 0
+            
             for (i, tag) in enumerate(list(dctTag.keys())):
                 chk = QCheckBox(topFiller)
                 chk.setText(tag + ' : %d' % (dctTag[tag]))
@@ -625,15 +626,22 @@ class MainAppLogic():
             mainUI.scrollTags.setWidget(topFiller)
 
             # 根据上次保存的配置来设置各checkbox的选中状态
+            
             if hasattr(self, 'cfgDct'):
                 cfgDct = self.cfgDct
                 if cfgDct['nextDSFolder'] == dsFolder:
                     self.ShowAt(cfgDct['rndNdx'])
                     if 'allowedTags' in cfgDct.keys():
+                        chkCnt = 0
                         for chk in self.chkTags:
                             oriText = chk[1]
                             tag = oriText.split(':')[0].strip()
-                            chk[0].setChecked(tag in cfgDct['allowedTags'])
+                            isChk = tag in cfgDct['allowedTags']
+                            if isChk:
+                                chkCnt += 1
+                            chk[0].setChecked(isChk)
+                        if chkCnt == 0:
+                            self.chkTags[0][0].setChecked(True)
 
             
     

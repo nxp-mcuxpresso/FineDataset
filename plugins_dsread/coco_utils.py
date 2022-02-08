@@ -197,12 +197,7 @@ class InternalCOCOUtils(abstract_utils.AbstractUtils):
                     if xywh['dirty'] > 0:
                         isToSkipImg = True
                         break
-            else:
-                xywhs2 = []
-                for xywh in item['xywhs']:
-                    if xywh['dirty'] == 0:
-                        xywhs2.append(xywh)
-                item['xywhs'] = xywhs2
+
             if isToSkipImg == True:
                 continue
             if cnt >= minGTPerImg and cnt <= maxGTPerImg:

@@ -77,7 +77,6 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
             self.lstAnnos = self.lstAnnos[:maxCnt]
         imgCnt = min(maxCnt, len(self.lstAnnos))
         for i in range(imgCnt):
-            dirty = 0
             if i % 100 == 0:
                 if callback is not None:
                     callback(i * 100 / imgCnt)
@@ -86,6 +85,7 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
             dctAreas = []
             areaAverage = 0
             for gtIn in dctIn['gtboxes']:
+                dirty = 0
                 xywh = gtIn['vbox'] # fbox会把遮挡的部分也算进去
                 area = xywh[3] * xywh[2] / 100.0
                 tag = gtIn['tag']
@@ -93,14 +93,15 @@ class CrowdHumanUtils(abstract_utils.AbstractUtils):
                 # 我们在检测人体，所以滤除过小的
                 if xywh[2] == 0:
                     continue
+                if xywh[2]  * xywh[3] < 12*12:
+                    continue
                 aspect = xywh[3]  / xywh[2]
                 if aspect < minHvsW or aspect > maxHvsW:
                     dirty = 1
                     if isSkipDirtyImg:
                         lstBBoxes = []
                         break
-                if xywh[2]  * xywh[3] < 12*12:
-                    continue
+
                 dctItem = {
                     'x1' : xywh[0],
                     'y1' : xywh[1],

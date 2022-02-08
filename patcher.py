@@ -279,6 +279,8 @@ class Patcher():
 
         img = None
         if len(item['xywhs']) < 2:
+            if len(item['xywhs']) == 0:
+                return [[],[],[]], None
             lstSolo = []
             b1 = item['xywhs'][0]
             wi, hi, x1i, y1i, x2i, y2i, cxi, cyi, sqrtAi = _getValues(item['xywhs'][0])
@@ -474,7 +476,7 @@ class Patcher():
         image = Image.open(self.provider.MapFile(strFile))
         lstPatches = []
         
-        random.shuffle(lstOriPats)
+        # random.shuffle(lstOriPats)
         # pat打包格式：[[子框],(x1, y1),(x2,y2), bbox, 面积]
         newPatchCnt = 0
         skipBadAspectCnt = 0
