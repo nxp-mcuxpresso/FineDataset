@@ -52,9 +52,9 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>280</y>
+      <y>250</y>
       <width>361</width>
-      <height>211</height>
+      <height>181</height>
      </rect>
     </property>
     <property name="font">
@@ -754,7 +754,7 @@
     <property name="geometry">
      <rect>
       <x>1180</x>
-      <y>520</y>
+      <y>460</y>
       <width>181</width>
       <height>91</height>
      </rect>
@@ -862,7 +862,7 @@
     <property name="geometry">
      <rect>
       <x>1180</x>
-      <y>620</y>
+      <y>560</y>
       <width>191</width>
       <height>101</height>
      </rect>
@@ -952,31 +952,12 @@
       <string>刷新标注</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="btnToVoc">
-     <property name="geometry">
-      <rect>
-       <x>100</x>
-       <y>60</y>
-       <width>81</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Tahoma</family>
-       <pointsize>9</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>-&gt; VOC tar</string>
-     </property>
-    </widget>
    </widget>
    <widget class="QPushButton" name="btnTagSelInv">
     <property name="geometry">
      <rect>
       <x>1100</x>
-      <y>690</y>
+      <y>630</y>
       <width>71</width>
       <height>31</height>
      </rect>
@@ -995,7 +976,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>510</y>
+      <y>450</y>
       <width>81</width>
       <height>16</height>
      </rect>
@@ -1016,7 +997,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>690</y>
+      <y>630</y>
       <width>71</width>
       <height>31</height>
      </rect>
@@ -1035,7 +1016,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>530</y>
+      <y>470</y>
       <width>161</width>
       <height>151</height>
      </rect>
@@ -1059,7 +1040,7 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>146</width>
+       <width>142</width>
        <height>149</height>
       </rect>
      </property>
@@ -1069,7 +1050,7 @@
     <property name="geometry">
      <rect>
       <x>1010</x>
-      <y>730</y>
+      <y>670</y>
       <width>161</width>
       <height>31</height>
      </rect>
@@ -1084,6 +1065,56 @@
      <string>删除未选中的类别</string>
     </property>
    </widget>
+   <widget class="QComboBox" name="cmbExportDSType">
+    <property name="geometry">
+     <rect>
+      <x>1100</x>
+      <y>720</y>
+      <width>171</width>
+      <height>22</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_11">
+    <property name="geometry">
+     <rect>
+      <x>1010</x>
+      <y>720</y>
+      <width>91</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Tahoma</family>
+      <pointsize>9</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>导出数据集格式</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnExport">
+    <property name="geometry">
+     <rect>
+      <x>1290</x>
+      <y>710</y>
+      <width>71</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Tahoma</family>
+      <pointsize>9</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>导出</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -1091,7 +1122,7 @@
      <x>0</x>
      <y>0</y>
      <width>1380</width>
-     <height>23</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -1219,7 +1250,6 @@
   <tabstop>btnOriImg</tabstop>
   <tabstop>btnTagSelAll</tabstop>
   <tabstop>btnTagSelInv</tabstop>
-  <tabstop>btnToVoc</tabstop>
   <tabstop>btnDelNonCheckedTags</tabstop>
  </tabstops>
  <resources/>

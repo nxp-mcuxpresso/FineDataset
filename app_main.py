@@ -3,7 +3,7 @@ from typing import AbstractSet
 from PyQt5 import QtGui, QtCore
 import PyQt5
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QCheckBox, QWidget, QApplication, QMainWindow, QMessageBox, QStatusBar, QFileDialog, QInputDialog
+from PyQt5.QtWidgets import QCheckBox, QWidget, QApplication, QMainWindow, QMessageBox, QStatusBar, QFileDialog, QInputDialog, QComboBox
 from PyQt5.QtCore import Qt
 try:
     import qdarkstyle
@@ -15,7 +15,6 @@ import json
 import os.path as path
 import os
 import numpy as np
-import widerface2voc as w2v
 import time
 import shutil
 import importlib
@@ -24,6 +23,28 @@ import patcher
 import glob
 import plugins_dsread.abstract_utils as abstract_utils
 class MainAppLogic():
+    def ScanPlugIns(self, sGlobPattern='./plugins_dsread/*_utils.py', cmb:QComboBox=None,
+    dctPlugins:dict=None):
+        lstTypes = [x[2:-3] for x in glob.glob(sGlobPattern)]
+        lstTypes = [x.replace('\\', '.') for x in lstTypes]
+        lstTypes = [x.replace('/', '.') for x in lstTypes]        
+        pluginCnt = 0
+        for plugin in lstTypes:
+            a = importlib.import_module(plugin)
+            dsType = a.GetDSTypeName()
+            dsCls = a.GetUtilClass()
+            if dsType is None:
+                # None类型，用于表示抽象类
+                continue
+            if not isinstance(dsType, list):
+                dsType = [dsType]
+                dsCls = [dsCls]
+            for (i,ds) in enumerate(dsType):
+                cmb.addItem(ds)
+                dctPlugins[ds] = dsCls[i]
+                pluginCnt += 1
+        # cmb.setCurrentIndex(pluginCnt - 1)
+
     def __init__(self, ui:widertools.Ui_MainWindow, mainWindow):
         self.ui = ui
         self.mainWindow = mainWindow
@@ -39,36 +60,16 @@ class MainAppLogic():
         if not path.exists('./uicfgs'):
             os.makedirs('./uicfgs')
         self.rndNdx = 2305
-        self.dctPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
-        # 搜索 xxx_utils.py
-        lstTypes = [x[2:-3] for x in glob.glob('./plugins_dsread/*_utils.py')]
-        lstTypes = [x.replace('\\', '.') for x in lstTypes]
-        lstTypes = [x.replace('/', '.') for x in lstTypes]        
-        pluginCnt = 0
-        for plugin in lstTypes:
-            a = importlib.import_module(plugin)
-            dsType = a.GetDSTypeName()
-            dsCls = a.GetUtilClass()
-            if dsType is None:
-                # None类型，用于表示抽象类
-                continue
-            if not isinstance(dsType, list):
-                dsType = [dsType]
-                dsCls = [dsCls]
-            for (i,ds) in enumerate(dsType):
-                ui.cmbDSType.addItem(ds)
-                self.dctPlugins[ds] = dsCls[i]
-                pluginCnt += 1
+        self.dctDsReadPlugins = dict() # 读取各种数据集的插件字典，键为数据集类型名，值为读取数据集的对象
+        self.dctDsExportPlugins = dict()
+        self.ScanPlugIns('./plugins_dsread/*_utils.py', ui.cmbDSType, self.dctDsReadPlugins)
+        self.ScanPlugIns('./plugins_export/*_export.py', ui.cmbExportDSType, self.dctDsExportPlugins)
 
-        # ui.cmbDSType.addItems(['wider_face', 'crowd_human', 'voc', 'coco'])
-        ui.cmbDSType.setCurrentIndex(pluginCnt - 1)
         ui.cmbSubSet.addItems(['train','val', 'any'])
         ui.cmbMaxObjsPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
         ui.cmbMaxObjsPerCluster.setCurrentIndex(8)
         #ui.cmbMinCloseRate.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])
         #ui.cmbMinCloseRate.setCurrentIndex(3)
-
-            
         #else:
         #    self.SaveCfgDict()
 
@@ -112,8 +113,8 @@ class MainAppLogic():
         ui.btnTagSelInv.clicked.connect(self.OnClicked_TagSelInv)        
         ui.btnDSFolder.clicked.connect(self.OnClicked_DSFolder)
 
-        ui.btnToVoc.clicked.connect(lambda :self.OnClicked_ScanAndMayExportVOC())
-        ui.btnRefreshLabels.clicked.connect(lambda :self.OnClicked_ScanAndMayExportVOC(isToMakeVOC=False))
+        ui.btnExport.clicked.connect(lambda :self.OnClicked_ScanAndMayExport())
+        ui.btnRefreshLabels.clicked.connect(lambda :self.OnClicked_ScanAndMayExport(isToExport=False))
         
         ui.menuLoadConfig.triggered.connect(lambda: self.OnTriggered_MenuLoadUiCfg())
         ui.menuSaveConfigAs.triggered.connect(lambda: self.OnTriggered_MenuSaveUiCfgAs())        
@@ -312,40 +313,54 @@ class MainAppLogic():
         # ui.imgWnd.setPixmap(pix2)
         ui.lblImg.setPixmap(pix3)
 
-    def OnClicked_ScanAndMayExportVOC(self, isToMakeVOC = True):
+    def OnClicked_ScanAndMayExport(self, isToExport = True):
         def callback(pgs, msg=''):
             self.ui.pgsBar.setValue(pgs)
             if len(msg) > 0:
                 self.ui.statusBar.showMessage(msg)
             QApplication.processEvents()
-        self.ui.pgsBar.setVisible(True)
-        for setSel in ['train', 'val', 'test', 'any']:
-            for cntSel in ['single', 'multi']:
-                self.ui.pgsBar.setValue(1)
-                self.ui.statusBar.showMessage('正在转换%s %s' % (setSel, cntSel), 60000)
-                QApplication.processEvents()
-                voc = w2v.WF2VOC(setSel, cntSel)
-                voc.ScanAndDelInvalidBBoxEntries(callback=callback)
-                if isToMakeVOC:
-                    self.ui.statusBar.showMessage('导出VOC格式数据集中...')
-                    voc.MakeVOC(callback=callback)
-        self.ui.statusBar.showMessage('转换完成', 5000)
-        self.ui.tmrToHidePgsBar.start()
 
-    def OnClicked_ScanForInvalid(self):
-        
-        def callback(pgs):
-            self.ui.pgsBar.setValue(pgs)
-            QApplication.processEvents()
-        
+        def _doScanAndDelInvalidBBoxEntries(strInPath, maxCnt=1E7, callback=None):
+            if path.exists(strInPath):
+                with open(strInPath + '/bboxes.json') as fd:
+                    lstBBoxes = json.load(fd)
+            else:
+                return -1
+
+            cnt = 0
+            total = len(lstBBoxes)
+
+            lstNewBBoxes = list()
+            for item in lstBBoxes:
+                imgFile = './outs/' + item['filename']
+                if path.exists(imgFile):
+                    lstNewBBoxes.append(item)
+            if len(lstNewBBoxes) < len(lstBBoxes):
+                with open(strInPath + '/bboxes.json', 'w') as fd:
+                    lstBBoxes = lstNewBBoxes
+                    json.dump(lstNewBBoxes, fd)
+            return cnt
+            
+        def ScanAndDelInvalidBBoxEntries(subsetSel='train', cntSel='multi', maxCnt=1E7, callback=None):
+            lst = glob.glob('./outs/out_%s_%s*' % (subsetSel, cntSel))
+            lst = [x.replace('\\', '/') for x in lst]
+            lst = list(filter(lambda x: path.isdir(x) == True, lst))
+            lstInPaths = lst            
+            for strPath in lstInPaths:
+                _doScanAndDelInvalidBBoxEntries(strPath, maxCnt, callback)
+
         self.ui.pgsBar.setVisible(True)
-        for setSel in ['train', 'val', 'test']:
+        for subsetSel in ['train', 'val', 'test', 'any']:
             for cntSel in ['single', 'multi']:
                 self.ui.pgsBar.setValue(1)
-                self.ui.statusBar.showMessage('正在转换%s %s' % (setSel, cntSel), 60000)
+                self.ui.statusBar.showMessage('正在清洗%s %s' % (subsetSel, cntSel), 60000)
                 QApplication.processEvents()
-                voc = w2v.WF2VOC(setSel, cntSel)
-                voc.MakeVOC(callback=callback)
+                ScanAndDelInvalidBBoxEntries(subsetSel, cntSel, callback=callback)
+                if isToExport:
+                    self.ui.statusBar.showMessage('导出中...')
+                    dsType = ui.cmbExportDSType.currentText()
+                    exporter = self.dctDsExportPlugins[dsType](subsetSel, cntSel)
+                    exporter.Export(callback=callback)
         self.ui.statusBar.showMessage('转换完成', 5000)
         self.ui.tmrToHidePgsBar.start()
 
@@ -707,7 +722,7 @@ class MainAppLogic():
         QApplication.processEvents()
         try:
             setSel = self.ui.cmbSubSet.currentText()
-            provider = self.dctPlugins[dsType](dsFolder, setSel, dctCfg, callback)
+            provider = self.dctDsReadPlugins[dsType](dsFolder, setSel, dctCfg, callback)
 
         except Exception as e:
             print(e)

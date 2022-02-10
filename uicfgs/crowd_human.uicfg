@@ -1,4 +1,6 @@
 {
+    "version": "2022.02.07",
+    "savePath": "Q:/gitrepos/subdataset/uicfgs/crowd_human.uicfg",
     "DSType": "Crowd Human",
     "DSTypeNdx": 2,
     "DSSubset": "any",
@@ -8,7 +10,7 @@
     "MaxHvsW": "6/1",
     "MinGTPerImg": "2",
     "MaxGTPerImg": "25",
-    "IsSkipDirtyImage": true,
+    "IsSkipDirtyImage": false,
     "MinAreaRate": "8.83% ^2",
     "MaxAreaRate": "100.% ^2",
     "MinAreaRateNdx": 12,
@@ -24,6 +26,8 @@
     "IsSkipDirtyPatch": true,
     "IsOutHasTmStmp": true,
     "nextDSFolder": "Q:/datasets/pedastrain_crowdhuman",
-    "rndNdx": 2737,
-    "allowedTags": []
+    "rndNdx": 8077,
+    "allowedTags": [
+        "person"
+    ]
 }

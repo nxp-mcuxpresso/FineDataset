@@ -109,7 +109,7 @@ class DSUtils():
 class MyMainUI(pyqt5_ab_main.Ui_MainWindow):
     def __init__(self, hostWnd):
         super(pyqt5_ab_main.Ui_MainWindow, self).__init__()
-        self.dctPlugins = dict()
+        self.dctDsReadPlugins = dict()
         self.hostWnd = hostWnd
         self.img = None
         self.setupUi(MainWindow)
@@ -156,7 +156,7 @@ class MyMainUI(pyqt5_ab_main.Ui_MainWindow):
                 dsCls = [dsCls]
             for (i,ds) in enumerate(dsType):
                 self.cmbDSType.addItem(ds)
-                self.dctPlugins[ds] = dsCls[i]
+                self.dctDsReadPlugins[ds] = dsCls[i]
                 pluginCnt += 1
 
         self.cmbDSType.setCurrentIndex(2)
@@ -503,7 +503,7 @@ class MainAppLogic():
         QApplication.processEvents()
         try:
             setSel = uiMain.cmbSubSet.currentText() #uiMain.cmb
-            provider = uiMain.dctPlugins[dsType](dir_choose, setSel, dctCfg, callback)
+            provider = uiMain.dctDsReadPlugins[dsType](dir_choose, setSel, dctCfg, callback)
 
         except Exception as e:
             print(e)

@@ -1,3 +1,8 @@
+try:
+    import abstract_export
+except:
+    import plugins_export.abstract_export as abstract_export
+
 import json
 import shutil
 
@@ -44,7 +49,14 @@ from shutil import rmtree
 import cv2
 import tarfile
 import glob
-class WF2VOC():
+
+def GetDSTypeName():
+    return "VOC"
+
+def GetUtilClass():
+    return VOCExport
+
+class VOCExport():
     def __init__(self, setSel='train', subsetSel='single', strRootPath = './outs'):
         self.setSel = setSel
         self.subsetSel = subsetSel
@@ -130,33 +142,14 @@ class WF2VOC():
             shutil.rmtree(outPath)
         return cnt
 
-    def MakeVOC(self, maxCnt=1E7, callback=None, isTarOnly=True):
+    def Export(self, maxCnt=1E7, callback=None, isTarOnly=True):
         for strPath in self.lstInPaths:
             self._doMakeVOC(strPath, maxCnt, callback, isTarOnly)
 
-    def _doScanAndDelInvalidBBoxEntries(self, strInPath, maxCnt=1E7, callback=None):
-        if path.exists(strInPath):
-            with open(strInPath + '/bboxes.json') as fd:
-                self.lstBBoxes = json.load(fd)
-        else:
-            return -1
-
-        cnt = 0
-        total = len(self.lstBBoxes)
-
-        lstNewBBoxes = list()
-        for item in self.lstBBoxes:
-            imgFile = self.strRootPath + '/' + item['filename']
-            if path.exists(imgFile):
-                lstNewBBoxes.append(item)
-        if len(lstNewBBoxes) < len(self.lstBBoxes):
-            with open(self.strInPath + '/bboxes.json', 'w') as fd:
-                self.lstBBoxes = lstNewBBoxes
-                json.dump(lstNewBBoxes, fd)
-        return cnt
-    def ScanAndDelInvalidBBoxEntries(self, maxCnt=1E7, callback=None):
-        for strPath in self.lstInPaths:
-            self._doScanAndDelInvalidBBoxEntries(strPath, maxCnt, callback)
 if __name__ == '__main__':
-    tester = WF2VOC('train','multi')
-    tester.MakeVOC(50)
+    curDir = os.getcwd()
+    if path.split(curDir)[-1].startswith('plugin'):
+        os.chdir('../')
+    print(os.getcwd())    
+    tester = VOCExport('train','multi')
+    tester.Export(50)
