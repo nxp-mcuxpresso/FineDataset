@@ -6,61 +6,25 @@ except:
 import json
 import shutil
 
-strPatten = '''
-<annotation>
-	<folder>wf_voc_%s_%s</folder>
-	<filename>%s.jpg</filename>
-	<source>
-		<database>The VOC2007 Database</database>
-		<annotation>PASCAL VOC2007</annotation>
-		<image>flickr</image>
-		<flickrid>325443404</flickrid>
-	</source>
-	<owner>
-		<flickrid>autox4u</flickrid>
-		<name>Perry Aidelbaum</name>
-	</owner>
-	<size>
-		<width>%d</width>
-		<height>%d</height>
-		<depth>3</depth>
-	</size>
-	<segmented>0</segmented>
-'''
-
-strObj = '''
-	<object>
-		<name>%s</name>
-		<pose>Right</pose>
-		<truncated>0</truncated>
-		<difficult>0</difficult>
-		<bndbox>
-			<xmin>%d</xmin>
-			<ymin>%d</ymin>
-			<xmax>%d</xmax>
-			<ymax>%d</ymax>
-		</bndbox>
-	</object>
-'''
 import os.path as path
 import os
 # from wf_utils import DelTree
 from shutil import rmtree
 import cv2
 import tarfile
-import glob
 
 def GetDSTypeName():
-    return "VOC"
+    return "YOLO"
 
 def GetUtilClass():
-    return VOCExport
+    return YOLOExport
 
-class VOCExport(abstract_export.AbstractExport):
+class YOLOExport(abstract_export.AbstractExport):
     def __init__(self, setSel='train', subsetSel='single', strRootPath = './outs'):
-        super(VOCExport, self).__init__()
+        super(YOLOExport, self).__init__(setSel, subsetSel, strRootPath)
 
-    def _doMakeVOC(self, strInPath, maxCnt=1E7, callback=None, isTarOnly=True):
+    def _doMakeYOLO(self, strInPath, maxCnt=1E7, callback=None, isTarOnly=True):
+        
         if path.exists(strInPath):
             with open(strInPath + '/bboxes.json') as fd:
                 self.lstBBoxes = json.load(fd)
@@ -71,7 +35,7 @@ class VOCExport(abstract_export.AbstractExport):
         t1 = os.stat(strInPath).st_mtime
         
         os.chdir('./outs')
-        sTarFolder = 'voc_%s' % (strInPath.split('/')[-1])
+        sTarFolder = 'yolo_%s' % (strInPath.split('/')[-1])
         if path.exists(sTarFolder + '.tar'):
             t0 = os.stat(sTarFolder + '.tar').st_mtime
         else:
@@ -83,52 +47,72 @@ class VOCExport(abstract_export.AbstractExport):
             return 0
 
         tarf = tarfile.TarFile(sTarFolder + '.tar', 'w')
+
         os.chdir(cur_path)
         
-        outPath = './outs/voc_%s' % (strInPath.split('/')[-1])
+        outPath = './outs/yolo_%s' % (strInPath.split('/')[-1])
         if path.exists(outPath):
             rmtree(outPath)
-        os.makedirs(path.join(outPath, "JPEGImages"))
-        os.makedirs(path.join(outPath, "Annotations"))
-        
-        
+        os.makedirs(outPath + '/data')        
         cnt = 0
         total = len(self.lstBBoxes)
-
-
+        dctTag2Num = dict()
+        lstOutJpgPath = []
         for item in self.lstBBoxes:
             sFileName = path.split(item['filename'])[1]
             sMainName = path.splitext(sFileName)[0]
             img = cv2.imread(self.strRootPath + '/' + item['filename'])
-            sOutJpgPath = '%s/JPEGImages/%s.jpg' % (outPath, sMainName)
-            
+            sOutJpgPath = '%s/data/%s.jpg' % (outPath, sMainName)
+
             cv2.imwrite(sOutJpgPath, img, [int(cv2.IMWRITE_JPEG_QUALITY),70])
             
             os.chdir('./outs')
-            tarf.add('%s/JPEGImages/%s.jpg' % (sTarFolder, sMainName))
+            tarf.add('%s/data/%s.jpg' % (sTarFolder, sMainName))
             os.chdir(cur_path)
             if isTarOnly:
                 os.remove(sOutJpgPath)
-            strOutFrame = strPatten % (self.setSel, self.subsetSel, sFileName, img.shape[0], img.shape[1])
+            tagCnt = 0
+            lstYoloGTs = []
             for xyxy in item['xyxys']:
-                strVocBox = strObj % (xyxy[4], xyxy[0], xyxy[1], xyxy[2], xyxy[3])
-                strOutFrame += strVocBox
-            strOutFrame += '</annotation>\n'
+                tag = xyxy[4]
+                try:
+                    tagNdx = dctTag2Num[tag]
+                except:
+                    dctTag2Num[tag] = tagCnt
+                    tagNdx = tagCnt
+                    tagCnt += 1
+                gtW = xyxy[2] - xyxy[0]
+                gtH = xyxy[3] - xyxy[1]
+                
+                imgW = img.shape[0]
+                imgH = img.shape[1]
+                ccwh = [(xyxy[0] + gtW / 2) / imgW, (xyxy[1] + gtH / 2) / imgH, gtW / imgW, gtH / imgH]
+                strYoloGT = str(tagNdx) + ' ' + ' '.join(['%.4f' % (x) for x in ccwh])
+                lstYoloGTs.append(strYoloGT)
             
-            sOutXmlPath = '%s/Annotations/%s.xml' % (outPath, sMainName)
-            with open(sOutXmlPath, 'w') as fd:
-                fd.write(strOutFrame)
+
+            
+            sOutTxtPath = '%s/data/%s.txt' % (outPath, sMainName)
+            with open(sOutTxtPath, 'w') as fd:
+                fd.write('\n'.join(lstYoloGTs))
             os.chdir('./outs')
-            tarf.add('%s/Annotations/%s.xml' % (sTarFolder, sMainName))
+            tarf.add('%s/data/%s.txt' % (sTarFolder, sMainName))
             os.chdir(cur_path)
             if isTarOnly:
-                os.remove(sOutXmlPath)
+                os.remove(sOutTxtPath)
             cnt += 1
             if callback is not None:
                 callback(100 * cnt / total, 'processing %s' % strInPath)
+            lstOutJpgPath.append('./data/' + sOutJpgPath.split('/')[-1])
             if cnt >= maxCnt:
                 break
-       
+
+        with open(path.join(outPath, 'list.txt'), 'w') as lstf:
+            lstf.write('\n'.join(lstOutJpgPath))
+
+        os.chdir('./outs')
+        tarf.add(sTarFolder + '/list.txt')
+        os.chdir(cur_path)
         tarf.close()
         if isTarOnly:
             shutil.rmtree(outPath)
@@ -136,12 +120,12 @@ class VOCExport(abstract_export.AbstractExport):
 
     def Export(self, maxCnt=1E7, callback=None, isTarOnly=True):
         for strPath in self.lstInPaths:
-            self._doMakeVOC(strPath, maxCnt, callback, isTarOnly)
+            self._doMakeYOLO(strPath, maxCnt, callback, isTarOnly)
 
 if __name__ == '__main__':
     curDir = os.getcwd()
     if path.split(curDir)[-1].startswith('plugin'):
         os.chdir('../')
     print(os.getcwd())    
-    tester = VOCExport('train','multi')
+    tester = YOLOExport('train','multi')
     tester.Export(50)
