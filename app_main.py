@@ -386,7 +386,7 @@ class MainAppLogic():
                 _doScanAndDelInvalidBBoxEntries(strPath, maxCnt, callback)
 
         self.ui.pgsBar.setVisible(True)
-        for subsetSel in ['train', 'val', 'test', 'any']:
+        for subsetSel in ['any','train', 'val', 'test']:
             for cntSel in ['single', 'multi']:
                 self.ui.pgsBar.setValue(1)
                 self.ui.statusBar.showMessage('正在清洗%s %s' % (subsetSel, cntSel), 60000)

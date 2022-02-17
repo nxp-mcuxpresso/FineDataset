@@ -58,7 +58,7 @@ def GetUtilClass():
 
 class VOCExport(abstract_export.AbstractExport):
     def __init__(self, setSel='train', subsetSel='single', strRootPath = './outs'):
-        super(VOCExport, self).__init__()
+        super(VOCExport, self).__init__(setSel=setSel, subsetSel=subsetSel, strRootPath=strRootPath)
 
     def _doMakeVOC(self, strInPath, maxCnt=1E7, callback=None, isTarOnly=True):
         if path.exists(strInPath):
