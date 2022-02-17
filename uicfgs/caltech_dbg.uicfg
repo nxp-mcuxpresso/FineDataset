@@ -1,7 +1,6 @@
 {
-    "lang": "ENG",
     "version": "2022.02.07",
-    "savePath": "Q:/gitrepos/subdataset/uicfgs/pedestrian_cuhk.uicfg",
+    "savePath": "Q:/gitrepos/subdataset/uicfgs/caltech_dbg.uicfg",
     "DSType": "Seq-Vbb",
     "DSTypeNdx": 3,
     "DSSubset": "any",
@@ -16,22 +15,19 @@
     "MaxAreaRate": "100.% ^2",
     "MinAreaRateNdx": 12,
     "MaxAreaRateNdx": 0,
-    "MinCloseRate": "12.5%",
-    "MinCloseRateNdx": 7,
+    "MinCloseRate": "8.05%",
+    "MinCloseRateNdx": 9,
     "MaxObjsPerCluster": "2",
     "MaxObjsPerClusterNdx": 8,
     "IsAllowMore": false,
     "txtOutY": "320",
     "txtOutX": "240",
     "txtOutN": "100",
-    "IsSkipDirtyPatch": true,
+    "IsSkipDirtyPatch": false,
     "IsOutHasTmStmp": false,
-    "nextDSFolder": "Q:/datasets/pedestrain_CUHK",
-    "rndNdx": 1039,
+    "nextDSFolder": "Q:/datasets/pedestrain_Caltech",
+    "rndNdx": 27082,
     "allowedTags": [
-        "object",
-        "people",
-        "person",
-        "person?"
+        "person"
     ]
 }

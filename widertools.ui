@@ -236,9 +236,9 @@
     <widget class="QComboBox" name="cmbMinAreaRate">
      <property name="geometry">
       <rect>
-       <x>130</x>
+       <x>150</x>
        <y>30</y>
-       <width>111</width>
+       <width>101</width>
        <height>21</height>
       </rect>
      </property>
@@ -254,9 +254,9 @@
     <widget class="QComboBox" name="cmbMaxAreaRate">
      <property name="geometry">
       <rect>
-       <x>240</x>
+       <x>250</x>
        <y>30</y>
-       <width>111</width>
+       <width>101</width>
        <height>21</height>
       </rect>
      </property>
@@ -358,7 +358,7 @@
       <rect>
        <x>10</x>
        <y>150</y>
-       <width>201</width>
+       <width>261</width>
        <height>21</height>
       </rect>
      </property>
@@ -380,7 +380,7 @@
       <string extracomment="脏表示包含了不符合条件的物体"/>
      </property>
      <property name="text">
-      <string>只包含符合约束的物体</string>
+      <string>只使用长宽比符合约束的物体</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -429,7 +429,7 @@
       <rect>
        <x>220</x>
        <y>30</y>
-       <width>31</width>
+       <width>41</width>
        <height>16</height>
       </rect>
      </property>
@@ -721,7 +721,7 @@
       <rect>
        <x>10</x>
        <y>200</y>
-       <width>141</width>
+       <width>261</width>
        <height>21</height>
       </rect>
      </property>
@@ -838,7 +838,7 @@
       <rect>
        <x>20</x>
        <y>60</y>
-       <width>131</width>
+       <width>151</width>
        <height>21</height>
       </rect>
      </property>
@@ -938,7 +938,7 @@
       <rect>
        <x>10</x>
        <y>60</y>
-       <width>81</width>
+       <width>101</width>
        <height>31</height>
       </rect>
      </property>
@@ -1040,7 +1040,7 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>142</width>
+       <width>146</width>
        <height>149</height>
       </rect>
      </property>
@@ -1099,7 +1099,7 @@
    <widget class="QPushButton" name="btnExport">
     <property name="geometry">
      <rect>
-      <x>1290</x>
+      <x>1280</x>
       <y>710</y>
       <width>71</width>
       <height>31</height>
@@ -1122,7 +1122,7 @@
      <x>0</x>
      <y>0</y>
      <width>1380</width>
-     <height>21</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -1147,9 +1147,17 @@
     <addaction name="menuDelNonCheckedTags"/>
     <addaction name="menuAboxTool"/>
    </widget>
+   <widget class="QMenu" name="menu_Language">
+    <property name="title">
+     <string>语言/Language</string>
+    </property>
+    <addaction name="menuLang_CHS"/>
+    <addaction name="menuLang_ENG"/>
+   </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
    <addaction name="menu_3"/>
+   <addaction name="menu_Language"/>
   </widget>
   <action name="actiontrain">
    <property name="text">
@@ -1158,7 +1166,7 @@
   </action>
   <action name="menuDbgGenMultiForCurrent">
    <property name="text">
-    <string>Generate Multi-patch dataset for current image</string>
+    <string>只在当前图像上生成多框数据集</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
@@ -1166,7 +1174,7 @@
   </action>
   <action name="menuSpecifyImageNdx">
    <property name="text">
-    <string>Specify image number</string>
+    <string>显示指定的图像...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
@@ -1174,12 +1182,12 @@
   </action>
   <action name="menuDelNonCheckedTags">
    <property name="text">
-    <string>Delete non-checked categories</string>
+    <string>删除未选中的标签</string>
    </property>
   </action>
   <action name="menuAboxTool">
    <property name="text">
-    <string>Anchor box tool</string>
+    <string>锚框工具</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+H</string>
@@ -1187,7 +1195,7 @@
   </action>
   <action name="menuSaveConfig">
    <property name="text">
-    <string>Save Config</string>
+    <string>保存配置</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
@@ -1195,7 +1203,7 @@
   </action>
   <action name="menuSaveConfigAs">
    <property name="text">
-    <string>Save Config As</string>
+    <string>配置另存为...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+A</string>
@@ -1203,7 +1211,7 @@
   </action>
   <action name="menuLoadConfig">
    <property name="text">
-    <string>Load Config</string>
+    <string>打开配置</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+L</string>
@@ -1217,7 +1225,26 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Auto Load last Config</string>
+    <string>自动打开上次配置</string>
+   </property>
+  </action>
+  <action name="menuLang_CHS">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>简体中文</string>
+   </property>
+  </action>
+  <action name="menuLang_ENG">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>English</string>
    </property>
   </action>
  </widget>

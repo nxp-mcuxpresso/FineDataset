@@ -22,6 +22,7 @@ from patcher import DelTree
 import patcher
 import glob
 import plugins_dsread.abstract_utils as abstract_utils
+import langs
 class MainAppLogic():
     def ScanPlugIns(self, sGlobPattern='./plugins_dsread/*_utils.py', cmb:QComboBox=None,
     dctPlugins:dict=None):
@@ -45,8 +46,22 @@ class MainAppLogic():
                 pluginCnt += 1
         # cmb.setCurrentIndex(pluginCnt - 1)
 
+    def SwitchLang(self, newLang:str):
+        ui = self.ui
+        self.lang = newLang
+        self.curMenuLang.setChecked(False)
+        if newLang == 'ENG':
+            self.curMenuLang = ui.menuLang_ENG
+            self.dctLang = langs.g_dctENG
+        elif newLang == 'CHS':
+            self.curMenuLang = ui.menuLang_CHS
+            self.dctLang = langs.g_dctCHS
+        self.curMenuLang.setChecked(True)
+        ui.MyretranslateUi(self.dctLang, MainWindow)
+        
+    
     def __init__(self, ui:widertools.Ui_MainWindow, mainWindow):
-        self.ui = ui
+        self.ui:MyMainUI = ui
         self.mainWindow = mainWindow
         self.oriImage = '' # 当前子块的原始图片对象
         self.dsFolder = '' # 当前已经读取了有效数据集的目录
@@ -64,6 +79,20 @@ class MainAppLogic():
         self.dctDsExportPlugins = dict()
         self.ScanPlugIns('./plugins_dsread/*_utils.py', ui.cmbDSType, self.dctDsReadPlugins)
         self.ScanPlugIns('./plugins_export/*_export.py', ui.cmbExportDSType, self.dctDsExportPlugins)
+        self.lang = 'CHS'
+        # 获取系统语言
+        self.curMenuLang = ui.menuLang_CHS
+        import locale
+        lang = 'ENG'
+        lang,enc = locale.getdefaultlocale()
+        
+        if lang.upper().find('CN') >= 0:
+            lang = 'CHS'
+        else:
+            lang = 'ENG'
+        # if self.lang == 'ENG':
+        self.SwitchLang(lang)
+            
 
         ui.cmbSubSet.addItems(['train','val', 'any'])
         ui.cmbMaxObjsPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
@@ -116,6 +145,9 @@ class MainAppLogic():
         ui.btnExport.clicked.connect(lambda :self.OnClicked_ScanAndMayExport())
         ui.btnRefreshLabels.clicked.connect(lambda :self.OnClicked_ScanAndMayExport(isToExport=False))
         
+        ui.menuLang_CHS.triggered.connect(lambda: self.SwitchLang('CHS'))
+        ui.menuLang_ENG.triggered.connect(lambda: self.SwitchLang('ENG'))
+
         ui.menuLoadConfig.triggered.connect(lambda: self.OnTriggered_MenuLoadUiCfg())
         ui.menuSaveConfigAs.triggered.connect(lambda: self.OnTriggered_MenuSaveUiCfgAs())        
         ui.menuSaveConfig.triggered.connect(lambda: self.OnTriggered_MenuSaveUiCfgAs(strPath=self.uiCfgFile))
@@ -171,6 +203,7 @@ class MainAppLogic():
     def SaveCfgDict(self, savePath = './uicfgs/_ui_cfg_auto.uicfg'):
         mainName = path.split(savePath)[1]
         dctRet = {
+            'lang' : self.lang,
             'version': '2022.02.07',
             'savePath': savePath,
             'DSType' : mainUI.cmbDSType.currentText(),
@@ -251,6 +284,9 @@ class MainAppLogic():
             mainUI.chkOutHasTmStmp.setChecked(cfgDct['IsOutHasTmStmp'])
             self.nextDSFolder = cfgDct['nextDSFolder']
             
+            if 'lang' in cfgDct.keys():
+                self.SwitchLang(cfgDct['lang'])
+
             # Following sentences can depend on self.cfgDct
             self.cfgDct = cfgDct
             
@@ -735,6 +771,72 @@ class MainAppLogic():
 class MyMainUI(widertools.Ui_MainWindow):
     def __init__(self):
         super(MyMainUI, self).__init__()
+    def MyretranslateUi(self, langDict, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", langDict["数据集化简分割工具"]))
+        self.lblImg.setText(_translate("MainWindow", "TextLabel"))
+        self.groupBox.setTitle(_translate("MainWindow", langDict["子块数据集配置"]))
+        self.label_2.setText(_translate("MainWindow", langDict["合并至少几个邻近物体"]))
+        self.label_5.setText(_translate("MainWindow", langDict["生成数量"]))
+        self.txtOutN.setText(_translate("MainWindow", "300"))
+        self.label_4.setText(_translate("MainWindow", langDict["子块 H"]))
+        self.txtOutX.setText(_translate("MainWindow", "128"))
+        self.txtOutY.setText(_translate("MainWindow", "128"))
+        self.label_10.setText(_translate("MainWindow", langDict["单物体面积占比范围"]))
+        self.label_6.setText(_translate("MainWindow", langDict["物体区域最小占比"]))
+        self.label_12.setText(_translate("MainWindow", "W"))
+        self.chkAllowMoreObj.setText(_translate("MainWindow", langDict["允许更密集"]))
+        self.chkSkipDirtyPatch.setText(_translate("MainWindow", langDict["只使用长宽比符合约束的物体"]))
+        self.groupBox_2.setTitle(_translate("MainWindow", langDict["源数据集选择"]))
+        self.label.setText(_translate("MainWindow", langDict["子集"]))
+        self.btnDSFolder.setText(_translate("MainWindow", langDict["选择目录..."]))
+        self.label_13.setText(_translate("MainWindow", langDict["类型"]))
+        self.btnForceLoadDS.setText(_translate("MainWindow", langDict["装载"]))
+        self.chkAutoload.setText(_translate("MainWindow", langDict["自动装载"]))
+        self.btnRandom.setText(_translate("MainWindow", langDict["随机显示"]))
+        self.btnSaveOriBBoxes.setText(_translate("MainWindow", langDict["导出标注"]))
+        self.txtMinHvsW.setText(_translate("MainWindow", "1/6"))
+        self.label_7.setText(_translate("MainWindow", langDict["边框高/宽的范围"]))
+        self.txtMaxHvsW.setText(_translate("MainWindow", "6/1"))
+        self.label_8.setText(_translate("MainWindow", langDict["每张图中边框个数的范围"]))
+        self.txtMinGTPerImg.setText(_translate("MainWindow", "1"))
+        self.txtMaxGTPerImg.setText(_translate("MainWindow", "50"))
+        self.chkSkipDirtyImage.setText(_translate("MainWindow", langDict["只读取符合约束的图"]))
+        self.groupBox_3.setTitle(_translate("MainWindow", langDict["生成子块数据集"]))
+        self.btnGenSingleFaceDataSet.setText(_translate("MainWindow", langDict["单框"]))
+        self.btnGenMultiFaceDataSet.setText(_translate("MainWindow", langDict["多框"]))
+        self.btnAbort.setText(_translate("MainWindow", langDict["中止"]))
+        self.chkOutHasTmStmp.setText(_translate("MainWindow", langDict["输出目录有时间戳"]))
+        self.groupBox_4.setTitle(_translate("MainWindow", langDict["验证子块数据集与工具"]))
+        self.btnValidateMultiFaceDataSet.setText(_translate("MainWindow", langDict["多框"]))
+        self.btnValidateSingleFaceDataSet.setText(_translate("MainWindow", langDict["单框"]))
+        self.btnOriImg.setText(_translate("MainWindow", langDict["原图"]))
+        self.btnRefreshLabels.setText(_translate("MainWindow", langDict["刷新标注"]))
+        self.btnTagSelInv.setText(_translate("MainWindow", langDict["反选"]))
+        self.label_9.setText(_translate("MainWindow", langDict["类别筛选"]))
+        self.btnTagSelAll.setText(_translate("MainWindow", langDict["全选"]))
+        self.btnDelNonCheckedTags.setText(_translate("MainWindow", langDict["删除未选中的类别"]))
+        self.label_11.setText(_translate("MainWindow", langDict["导出数据集格式"]))
+        self.btnExport.setText(_translate("MainWindow", langDict["导出"]))
+        self.menu.setTitle(_translate("MainWindow", langDict["文件"]))
+        self.menu_2.setTitle(_translate("MainWindow", langDict["调试"]))
+        self.menu_3.setTitle(_translate("MainWindow", langDict["工具"]))
+        self.actiontrain.setText(_translate("MainWindow", "train"))
+        self.menuDbgGenMultiForCurrent.setText(_translate("MainWindow", langDict["只在当前图像上生成多框数据集"]))
+        self.menuDbgGenMultiForCurrent.setShortcut(_translate("MainWindow", "Ctrl+D"))
+        self.menuSpecifyImageNdx.setText(_translate("MainWindow", langDict["显示指定的图像..."]))
+        self.menuSpecifyImageNdx.setShortcut(_translate("MainWindow", "Ctrl+N"))
+        self.menuDelNonCheckedTags.setText(_translate("MainWindow", langDict["删除未选中的标签"]))
+        self.menuAboxTool.setText(_translate("MainWindow", langDict["锚框工具"]))
+        self.menuAboxTool.setShortcut(_translate("MainWindow", "Ctrl+H"))
+        self.menuSaveConfig.setText(_translate("MainWindow", langDict["保存配置"]))
+        self.menuSaveConfig.setShortcut(_translate("MainWindow", "Ctrl+S"))
+        self.menuSaveConfigAs.setText(_translate("MainWindow", langDict["配置另存为..."]))
+        self.menuSaveConfigAs.setShortcut(_translate("MainWindow", "Ctrl+A"))
+        self.menuLoadConfig.setText(_translate("MainWindow", langDict["打开配置"]))
+        self.menuLoadConfig.setShortcut(_translate("MainWindow", "Ctrl+L"))
+        self.actionAuto_Load_last_Config.setText(_translate("MainWindow", langDict["自动打开上次配置"]))
+
 
 class MyQMainWindow(QMainWindow):
     def __init__(self):

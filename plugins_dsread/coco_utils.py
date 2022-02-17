@@ -13,7 +13,7 @@ import time
 def GetUtilClass():
     return [COCOCoarseUtils, COCOFineUtils]
 def GetDSTypeName():
-    return ['COCO-大类', 'COCO-小类']
+    return ['COCO-Coarse', 'COCO-Fine']
 
 
 ''' COCO数据集的要求
