@@ -45,7 +45,9 @@ g_dctENG = {
     "保存配置" : "Save config",
     "配置另存为..." : "Save config as...",
     "打开配置" : "Open config",
-    "自动打开上次配置" : "Auto open last config"
+    "自动打开上次配置" : "Auto open last config",
+    '在当前子集和约束条件下，%s中的数据集无法按%s解析！' : 'In current subset and constraints, dataset in %s cannot be parsed as %s!',
+    "数据集化简分割工具 - 已加载%s类型的数据集于：%s" : "subdataset tool - Loaded %s format dataset from folder %s"
 
 }
 
@@ -95,7 +97,9 @@ g_dctCHS = {
     "保存配置" : "保存配置",
     "配置另存为..." : "配置另存为...",
     "打开配置" : "打开配置",
-    "自动打开上次配置" : "自动打开上次配置"    
+    "自动打开上次配置" : "自动打开上次配置",
+    '在当前子集和约束条件下，%s中的数据集无法按%s解析！' : '在当前子集和约束条件下，%s中的数据集无法按%s解析！',
+    '数据集化简分割工具 - 已加载%s类型的数据集于：%s' : "数据集化简分割工具 - 已加载%s类型的数据集于：%s"
 }
 
 g_dctLang = {

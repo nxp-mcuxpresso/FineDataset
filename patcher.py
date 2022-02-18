@@ -704,9 +704,15 @@ class Patcher():
                                 break
                     if isReject == True:
                         continue
+                    try:
+                        print("Encountered bad image %s!" % (strFile))
+                        img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
+                        img = cv2.resize(img,(outWH[0], outWH[1]), interpolation=cv2.INTER_LINEAR)
+                    except:
+                        isReject = True
+                        continue
                     gtUsedCnts += gtNewUsedCnts
-                    img = cv2.cvtColor(np.asarray(cropped),cv2.COLOR_RGB2BGR)
-                    img = cv2.resize(img,(outWH[0], outWH[1]), interpolation=cv2.INTER_LINEAR)
+
                     cv2.imwrite('./outs/' + sOutFileName[2:], img)
                     dct['xyxys'] = lstBBxyxys
                     patchNdx += 1

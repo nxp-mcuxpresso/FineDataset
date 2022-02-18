@@ -14,7 +14,7 @@ import cv2
 import tarfile
 
 def GetDSTypeName():
-    return "YOLO"
+    return "(ongoing) YOLO"
 
 def GetUtilClass():
     return YOLOExport

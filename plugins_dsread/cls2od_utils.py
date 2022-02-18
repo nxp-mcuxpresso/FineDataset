@@ -11,9 +11,9 @@ import random
 import time
 
 def GetUtilClass():
-    return [Cls2OD_Folder]
+    return None #[Cls2OD_Folder]
 def GetDSTypeName():
-    return ['Cls2OD-by folder']
+    return None #['Cls2OD - by folder']
 class InternalCls2ODUtils(abstract_utils.AbstractUtils):
     def __init__(self, dsFolder = '.', setSel='train', dctCfg = {}, callback=None, maxCnt=50000, isShuffle=True, isFineCls=True):
         super(InternalCls2ODUtils, self).__init__(dsFolder, setSel, dctCfg, callback, maxCnt, isShuffle)

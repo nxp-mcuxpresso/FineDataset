@@ -131,7 +131,12 @@ class MainAppLogic():
         
     
     def __init__(self, ui:MyMainUI, mainWindow):
-        self.ui:MyMainUI = ui
+        
+        try:
+            self.ui:MyMainUI = ui
+        except:
+            self.ui = ui
+        self.dctLang = 'CHS'
         self.mainWindow = mainWindow
         self.oriImage = '' # 当前子块的原始图片对象
         self.dsFolder = '' # 当前已经读取了有效数据集的目录
@@ -246,7 +251,7 @@ class MainAppLogic():
         if path.exists('./uicfgs/_ui_cfg_auto.uicfg'):
             cfgDct = self.LoadCfgDict()
             self.uiCfgFile = './uicfgs/_ui_cfg_auto.uicfg'
-            mainUI.menuSaveConfig.setText('Save Config (%s)' % self.uiCfgFile)
+            mainUI.menuSaveConfig.setText('%s (%s)' % (self.dctLang['保存配置'], self.uiCfgFile))
         else:
             self.uiCfgFile = ''        
             if ui.chkAutoload.isChecked():
@@ -258,7 +263,7 @@ class MainAppLogic():
             if path.exists(lstPaths[0]):
                 self.LoadCfgDict(lstPaths[0])
                 self.uiCfgFile = lstPaths[0]
-                mainUI.menuSaveConfig.setText('Save Config (%s)' % self.uiCfgFile)
+                mainUI.menuSaveConfig.setText('%s (%s)' % (self.dctLang['保存配置'], self.uiCfgFile))
 
     def OnTriggered_MenuSaveUiCfgAs(self, strPath = ''):
         if len(strPath) < 1:
@@ -268,7 +273,7 @@ class MainAppLogic():
         if len(lstPaths) == 2 and len(lstPaths[0]) > 0:
             self.SaveCfgDict(lstPaths[0])
             self.uiCfgFile = lstPaths[0]
-            mainUI.menuSaveConfig.setText('Save Config (%s)' % self.uiCfgFile)
+            mainUI.menuSaveConfig.setText('%s (%s)' % (self.dctLang['保存配置'], self.uiCfgFile))
 
     def SaveCfgDict(self, savePath = './uicfgs/_ui_cfg_auto.uicfg'):
         mainName = path.split(savePath)[1]
@@ -709,7 +714,7 @@ class MainAppLogic():
     def UpdateDataset(self, provider:abstract_utils.AbstractUtils, dsFolder, dsType):
 
         if provider is None or provider.dctFiles is None or provider.dctFiles == {}:
-            self.ui.statusBar.showMessage('%s中的数据集无法按%s解析！' % (dsFolder, dsType) )            
+            self.ui.statusBar.showMessage(self.dctLang['在当前子集和约束条件下，%s中的数据集无法按%s解析！'] % (dsFolder, dsType) ) 
         else:
             mainUI.menuDelNonCheckedTags.setVisible(provider.CanDelTags())
             mainUI.btnDelNonCheckedTags.setEnabled(provider.CanDelTags())
@@ -717,7 +722,8 @@ class MainAppLogic():
             self.dsFolder = dsFolder
             self.provider = provider
             _translate = QtCore.QCoreApplication.translate
-            MainWindow.setWindowTitle(_translate("MainWindow", "数据集化简分割工具 - 已加载%s类型的数据集于：%s" % (mainUI.cmbDSType.currentText(), self.dsFolder)))            
+            MainWindow.setWindowTitle(_translate("MainWindow", 
+                self.dctLang["数据集化简分割工具 - 已加载%s类型的数据集于：%s"] % (mainUI.cmbDSType.currentText(), self.dsFolder)))            
             self.dataObj = patcher.Patcher(provider)
             self.ui.statusBar.showMessage('数据集%s (%s)读取成功!' % (dsFolder, dsType))
             for item in self.chkTags:
