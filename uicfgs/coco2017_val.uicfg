@@ -1,6 +1,6 @@
 {
     "version": "2022.02.07",
-    "DSType": "COCO-\u5c0f\u7c7b",
+    "DSType": "COCO-Fine",
     "DSTypeNdx": 1,
     "DSSubset": "val",
     "DSSubsetNdx": 1,

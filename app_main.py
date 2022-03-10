@@ -258,7 +258,7 @@ class MainAppLogic():
                 self.LoadDataset(self.nextDSFolder)
     
     def OnTriggered_MenuLoadUiCfg(self):
-        lstPaths = QFileDialog.getOpenFileName(MainWindow, '读取UI配置', './uicfgs', 'UICFG(*.uicfg)')
+        lstPaths = QFileDialog.getOpenFileName(MainWindow, self.dctLang['读取UI配置'], './uicfgs', 'UICFG(*.uicfg)')
         if len(lstPaths) > 1:
             if path.exists(lstPaths[0]):
                 self.LoadCfgDict(lstPaths[0])
@@ -267,7 +267,7 @@ class MainAppLogic():
 
     def OnTriggered_MenuSaveUiCfgAs(self, strPath = ''):
         if len(strPath) < 1:
-            lstPaths = QFileDialog.getSaveFileName(MainWindow, '保存UI配置', './uicfgs', 'UICFG(*.uicfg)')
+            lstPaths = QFileDialog.getSaveFileName(MainWindow, self.dctLang['保存UI配置'], './uicfgs', 'UICFG(*.uicfg)')
         else:
             lstPaths = [strPath, 'JSON(*.json)']
         if len(lstPaths) == 2 and len(lstPaths[0]) > 0:
@@ -382,14 +382,15 @@ class MainAppLogic():
     def ShowAt(self, ndx):
         try:
             [table, strKey, _,  ndx] = self.dataObj.ShowAt(ndx, False, allowedTags=self.GetAllowedTags())
-            self.ui.statusBar.showMessage('显示指定编号%d, 图片%s' % (ndx, strKey))
+            self.ui.statusBar.showMessage(self.dctLang['显示指定编号%d, 图片%s'] % (ndx, strKey))
             self.ShowImage(table, strKey)        
             self.rndNdx = ndx
         except:
-            self.ui.statusBar.showMessage('无效的图片号%d' % (ndx))
+            self.ui.statusBar.showMessage(self.dctLang['无效的图片号%d'] % (ndx))
     
     def OnMenuTriggered_SpecifyImageNdx(self):
-        ndx, isOK = QInputDialog.getInt(MainWindow, '设置当前图片索引', '请输入索引：', min = 0) 
+        ndx, isOK = QInputDialog.getInt(MainWindow, 
+            self.dctLang['设置当前图片索引'], self.dctLang['请输入索引：'], min = 0) 
         if isOK:
             self.ShowAt(ndx)
 
@@ -464,42 +465,42 @@ class MainAppLogic():
         for subsetSel in ['any','train', 'val', 'test']:
             for cntSel in ['single', 'multi']:
                 self.ui.pgsBar.setValue(1)
-                self.ui.statusBar.showMessage('正在清洗%s %s' % (subsetSel, cntSel), 60000)
+                self.ui.statusBar.showMessage(self.dctLang['正在清洗%s %s'] % (subsetSel, cntSel), 60000)
                 QApplication.processEvents()
                 ScanAndDelInvalidBBoxEntries(subsetSel, cntSel, callback=callback)
                 if isToExport:
-                    self.ui.statusBar.showMessage('导出中...')
+                    self.ui.statusBar.showMessage(self.dctLang['导出中...'])
                     dsType = ui.cmbExportDSType.currentText()
                     exporter = self.dctDsExportPlugins[dsType](subsetSel, cntSel)
                     exporter.Export(callback=callback)
-        self.ui.statusBar.showMessage('转换完成', 5000)
+        self.ui.statusBar.showMessage(self.dctLang['转换完成'], 5000)
         self.ui.tmrToHidePgsBar.start()
 
     def OnClicked_SaveOriBBoxes(self):
-        self.ui.statusBar.showMessage('正在保存', 60000)
+        self.ui.statusBar.showMessage(self.dctLang['正在保存'], 60000)
         QApplication.processEvents()
         sOutFile = 'labels_%s.json' % (self.ui.cmbSubSet.currentText())
         with open(sOutFile, 'w') as fd:
             json.dump(self.dataObj.dctFiles, fd, indent=4)
         # QMessageBox.information(None,'box', '已保存到%s' % sOutFile)
-        self.ui.statusBar.showMessage('已保存到%s' % sOutFile, 5000)
+        self.ui.statusBar.showMessage(self.dctLang['已保存到%s'] % sOutFile, 5000)
 
     def OnClicked_Random(self):
         [table, strKey, _, ndx] = self.dataObj.ShowRandom(False, allowedTags=self.GetAllowedTags())
         self.rndNdx = ndx
-        self.ui.statusBar.showMessage('随机显示编号%d, 图片%s' % (ndx, strKey))
+        self.ui.statusBar.showMessage(self.dctLang['随机显示编号%d, 图片%s'] % (ndx, strKey))
         self.ShowImage(table, strKey)
 
     def OnClicked_DSFolder(self):
         dir_choose = QFileDialog.getExistingDirectory(MainWindow,  
-                                    "选取文件夹",  
+                                    self.dctLang["选取文件夹"],  
                                     './') # 起始路径
 
         if dir_choose == "":
-            print("\n取消选择")
+            print("\Cancel folder selection")
             return
 
-        print("\n你选择的文件夹为:")
+        print("\nYou selected folder:")
         print(dir_choose)
         self.nextDSFolder = dir_choose        
         self.LoadDataset(dir_choose)
@@ -550,7 +551,7 @@ class MainAppLogic():
                 strOut += '\n' + lstReasons[i] + ' : ' + '%02.1f%%' % (lstRets[i]*100)
             QMessageBox.information(MainWindow, '生成结果统计', strOut)
         else:
-            QMessageBox.information(MainWindow, '生成结果统计', '没有生成任何数据')            
+            QMessageBox.information(MainWindow, self.dctLang['生成结果统计'], self.dctLang['没有生成任何数据'])            
 
     def OnClicked_GenPatchDataset(self, ndcIn=[], singleStr='multi'):
         self.dsFolder = self.dsFolder
@@ -574,7 +575,7 @@ class MainAppLogic():
             isReplace = False
         strOutFolder = self.GetNextFreeFolder(strOutFolder, isReplace=isReplace)
         if path.abspath(strOutFolder) == path.abspath(self.dsFolder):
-            self.ui.statusBar.showMessage('不能制作 - 源数据集路径不能与输出路径相同！')
+            self.ui.statusBar.showMessage(self.dctLang['不能制作 - 源数据集路径不能与输出路径相同！'])
             return
         self.strOutFolder = strOutFolder
         outW = int(self.ui.txtOutX.text())
@@ -600,7 +601,7 @@ class MainAppLogic():
         for ndx in ndc:
             #[table,ndx, strKey] = self.dataObj.ShowImage(ndx, False)
             #self.ShowImage(table, ndx, strKey)
-            self.ui.statusBar.showMessage('制作中, 图片%d' % ndx, 3600000)
+            self.ui.statusBar.showMessage(self.dctLang['制作中, 图片%d'] % (ndx), 3600000)
             if singleStr == 'multi':
                 self.patchNdx, lstPatches = self.dataObj.CutClusterPatches(
                     strOutFolder, self.patchNdx, ndx=ndx, minCloseRate=minClose, 
@@ -636,7 +637,7 @@ class MainAppLogic():
             json.dump(self.lstPatches, fd, indent=4)
         self.ui.pgsBar.setValue(100)
         mainUI.btnAbort.setEnabled(False)
-        self.ui.statusBar.showMessage('制作了%d/%d张图片于%s' % (self.patchNdx, dsSize, strOutFolder), 5000)
+        self.ui.statusBar.showMessage(self.dctLang['制作了%d/%d张图片于%s'] % (self.patchNdx, dsSize, strOutFolder), 5000)
         self._StatUsage(dbgSkips)
         self.ui.tmrToHidePgsBar.start()
         #self.ui.pgsBar.setVisible(False)
@@ -648,7 +649,7 @@ class MainAppLogic():
             strOutFolder = self.strOutFolder
         table, ndx, item = self.dataObj.ShowRandomValidate(strOutFolder)
         if table is None:
-            self.ui.statusBar.showMessage('未找到制作的数据集')
+            self.ui.statusBar.showMessage(self.dctLang['未找到制作的数据集'])
             return
         c = table.shape
         qImg = QtGui.QImage(bytearray(table), c[1], c[0], c[1]*3, QtGui.QImage.Format_BGR888)
@@ -658,7 +659,7 @@ class MainAppLogic():
         pix3 = pix.scaled(rect.width(),rect.height(), Qt.KeepAspectRatio)
         # ui.imgWnd.setPixmap(pix2)
         self.ui.lblImg.setPixmap(pix3)
-        self.ui.statusBar.showMessage('图片 %s' % item['filename']) 
+        self.ui.statusBar.showMessage('Image %s' % item['filename']) 
         
         fileNameNoPath = item['filename'].split('/')[-1]
         [mainName, ext] = path.splitext(fileNameNoPath)
@@ -679,7 +680,7 @@ class MainAppLogic():
                 [table, strKey, _] = self.dataObj.ShowImageFile(self.oriImage, False, allowedTags=self.GetAllowedTags())
                 self.ShowImage(table, strKey)        
             except:
-                self.ui.statusBar.showMessage('未找到图片') 
+                self.ui.statusBar.showMessage(self.dctLang['未找到图片']) 
 
     def OnClicked_TagSelAll(self):
         for item in self.chkTags:
@@ -714,7 +715,7 @@ class MainAppLogic():
     def UpdateDataset(self, provider:abstract_utils.AbstractUtils, dsFolder, dsType):
 
         if provider is None or provider.dctFiles is None or provider.dctFiles == {}:
-            self.ui.statusBar.showMessage(self.dctLang['在当前子集和约束条件下，%s中的数据集无法按%s解析！'] % (dsFolder, dsType) ) 
+            self.ui.statusBar.showMessage(self.dctLang['在当前子集和约束条件下，%s中未找到符合要求的%s格式数据集！'] % (dsFolder, dsType) ) 
         else:
             mainUI.menuDelNonCheckedTags.setVisible(provider.CanDelTags())
             mainUI.btnDelNonCheckedTags.setEnabled(provider.CanDelTags())
@@ -725,7 +726,7 @@ class MainAppLogic():
             MainWindow.setWindowTitle(_translate("MainWindow", 
                 self.dctLang["数据集化简分割工具 - 已加载%s类型的数据集于：%s"] % (mainUI.cmbDSType.currentText(), self.dsFolder)))            
             self.dataObj = patcher.Patcher(provider)
-            self.ui.statusBar.showMessage('数据集%s (%s)读取成功!' % (dsFolder, dsType))
+            self.ui.statusBar.showMessage(self.dctLang['数据集%s (%s)读取成功!'] % (dsFolder, dsType))
             for item in self.chkTags:
                 chk = item[0]
                 chk.hide()
@@ -830,7 +831,7 @@ class MainAppLogic():
 
         provider: abstract_utils.AbstractUtils = None
         dsType = ui.cmbDSType.currentText()
-        self.ui.statusBar.showMessage('数据集读取中...')
+        self.ui.statusBar.showMessage(self.dctLang['数据集读取中...'])
         QApplication.processEvents()
         try:
             setSel = self.ui.cmbSubSet.currentText()
@@ -838,7 +839,7 @@ class MainAppLogic():
 
         except Exception as e:
             print(e)
-            self.ui.statusBar.showMessage('代码错误：\n' + str(e))
+            self.ui.statusBar.showMessage('Code error：\n' + str(e))
 
         self.UpdateDataset(provider, dsFolder, dsType)
         self.ui.pgsBar.setValue(100)

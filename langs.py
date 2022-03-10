@@ -46,9 +46,30 @@ g_dctENG = {
     "配置另存为..." : "Save config as...",
     "打开配置" : "Open config",
     "自动打开上次配置" : "Auto open last config",
-    '在当前子集和约束条件下，%s中的数据集无法按%s解析！' : 'In current subset and constraints, dataset in %s cannot be parsed as %s!',
-    "数据集化简分割工具 - 已加载%s类型的数据集于：%s" : "subdataset tool - Loaded %s format dataset from folder %s"
-
+    '在当前子集和约束条件下，%s中未找到符合要求的%s格式数据集！' : 'In current subset and constraints, we didn\'t found dataset in %s to be parsed as %s!',
+    "数据集化简分割工具 - 已加载%s类型的数据集于：%s" : "subdataset tool - Loaded %s format dataset from folder %s",
+    '数据集%s (%s)读取成功!' : 'Dataset%s (%s) successfully loaded!',
+    '数据集读取中...' : 'Loading dataset...',
+    '未找到图片' : 'Image not found',
+    '未找到制作的数据集' : 'Generated dataset not found',
+    '制作了%d/%d张图片于%s' : 'Generated %d/%d images in %s',
+    '制作中, 图片%d' : 'Making sub dataset, image %d',
+    '不能制作 - 源数据集路径不能与输出路径相同！' : 'Cannot make dataset - dataset source folder must NOT be the same as dest folder!',
+    '生成结果统计' : 'Generating result statistics',
+    '没有生成任何数据' : 'No data is generated!',
+    '选取文件夹' : 'Select folder',
+    '已保存到%s' : 'Saved to %s',
+    '正在保存' : 'Saving',
+    '随机显示编号%d, 图片%s' : 'Show random image index %d, name %s',
+    '转换完成' : 'Conversion complete',
+    '导出中...' : 'Exporting',
+    '正在清洗%s %s' : 'Cleaning %s %s',
+    '设置当前图片索引' : 'Specify number for current image',
+    'Input number：' : 'Input number：',
+    '无效的图片号%d' : 'Invalid image number %d',
+    '显示指定编号%d, 图片%s' : 'Show specified image number %d : %s',
+    '保存UI配置' : 'Save UI configuration',
+    '读取UI配置' : 'Load UI configuration'    
 }
 
 g_dctCHS = {
@@ -98,8 +119,30 @@ g_dctCHS = {
     "配置另存为..." : "配置另存为...",
     "打开配置" : "打开配置",
     "自动打开上次配置" : "自动打开上次配置",
-    '在当前子集和约束条件下，%s中的数据集无法按%s解析！' : '在当前子集和约束条件下，%s中的数据集无法按%s解析！',
-    '数据集化简分割工具 - 已加载%s类型的数据集于：%s' : "数据集化简分割工具 - 已加载%s类型的数据集于：%s"
+    '在当前子集和约束条件下，%s中的数据集无法按%s解析！' : '在当前子集和约束条件下，%s中未找到符合要求的%s格式数据集！',
+    '数据集化简分割工具 - 已加载%s类型的数据集于：%s' : "数据集化简分割工具 - 已加载%s类型的数据集于：%s",
+    '数据集%s (%s)读取成功!' : '数据集%s (%s)读取成功!',
+    '数据集读取中...' : '数据集读取中...',
+    '未找到图片' : '未找到图片',
+    '制作了%d/%d张图片于%s' : '制作了%d/%d张图片于%s',
+    '制作中, 图片%d' : '制作中, 图片%d',
+    '不能制作 - 源数据集路径不能与输出路径相同！' : '不能制作 - 源数据集路径不能与输出路径相同！',
+    '生成结果统计' : '生成结果统计',
+    '没有生成任何数据' : '没有生成任何数据',
+    '选取文件夹' : '选取文件夹',
+    '已保存到%s' : '已保存到%s',
+    '正在保存' : '正在保存',
+    '随机显示编号%d, 图片%s' : '随机显示编号%d, 图片%s',
+    '转换完成' : '转换完成',
+    '导出中...' : '导出中...',
+    '正在清洗%s %s' : '正在清洗%s %s',
+    '设置当前图片索引' : '设置当前图片索引',
+    '请输入索引：' : '请输入索引：',
+    '无效的图片号%d' : '无效的图片号%d',
+    '显示指定编号%d, 图片%s' : '显示指定编号%d, 图片%s',
+    '保存UI配置' : '保存UI配置',
+    '读取UI配置' : '读取UI配置'
+    
 }
 
 g_dctLang = {
