@@ -97,7 +97,7 @@ class DSUtils():
                             }
                 else:
                     st = STATE_WANT_FILENAME
-        k2 = sorted(dctFiles.keys())
+        k2 = (dctFiles.keys())
         lstRet = []
         for k in k2:
             lstRet.append({

@@ -1,11 +1,11 @@
 {
     "lang": "CHS",
     "version": "2022.02.07",
-    "savePath": "Q:/gitrepos/subdataset/uicfgs/yolo_fruits.uicfg",
+    "savePath": "Q:/gitrepos/cv_dataset_patcher_tool/uicfgs/yolo_fruits.uicfg",
     "DSType": "YOLO",
     "DSTypeNdx": 7,
     "DSSubset": "any",
-    "DSSubsetNdx": 2,
+    "DSSubsetNdx": 0,
     "IsDSAutoLoad": true,
     "MinHvsW": "1/6",
     "MaxHvsW": "6/1",
@@ -27,7 +27,7 @@
     "IsSkipDirtyPatch": false,
     "IsOutHasTmStmp": false,
     "nextDSFolder": "Q:/datasets/yolo_fruits/fruit",
-    "rndNdx": 3591,
+    "rndNdx": 3420,
     "allowedTags": [
         "tag0",
         "tag1",

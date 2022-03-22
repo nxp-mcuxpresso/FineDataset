@@ -169,7 +169,7 @@ class MainAppLogic():
         self.SwitchLang(lang)
             
 
-        ui.cmbSubSet.addItems(['train','val', 'any'])
+        ui.cmbSubSet.addItems(['any', 'train','val'])
         ui.cmbMaxObjsPerCluster.addItems(['10', '9', '8', '7', '6','5', '4', '3', '2'])
         ui.cmbMaxObjsPerCluster.setCurrentIndex(8)
         #ui.cmbMinCloseRate.addItems(['0.5', '0.4', '0.32', '0.25', '0.2', '0.16', '0.125', '0.1', '0.08'])

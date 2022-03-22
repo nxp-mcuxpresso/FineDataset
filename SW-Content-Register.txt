@@ -1,0 +1,3 @@
+Release Name: finedataset
+Release Version: 0.10.0
+Package License: LICENSE - MIT
