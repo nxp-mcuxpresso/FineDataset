@@ -1,3 +1,5 @@
+# Copyright 2016-2022 NXP
+# SPDX-License-Identifier: MIT
 import sys
 from typing import AbstractSet
 from PyQt5 import QtGui, QtCore

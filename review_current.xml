@@ -1,0 +1,14 @@
+<!--
+This lets you use a variable for the path instead of having to repeat the same thing. 
+Replace DIR with the details of the full path holding the directories to be scanned.
+Replace package with the name of the directory to be scanned.
+Rename this file to "review_current.xml" to use with the CLR script.
+-->
+
+<!DOCTYPE opt [
+   <!ENTITY path "/DIR/">
+]>
+
+<opt>
+  <package dir="/home/rs/Downloads/cv_dataset_patcher_tool" git="/home/rs/Downloads/cv_dataset_patcher_tool" new="0" type="source" />
+</opt>

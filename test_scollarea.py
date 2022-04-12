@@ -1,3 +1,5 @@
+# Copyright 2016-2022 NXP
+# SPDX-License-Identifier: MIT
 import sys
 from PyQt5.QtWidgets import *
 class test(QWidget):

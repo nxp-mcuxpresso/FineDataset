@@ -1,4 +1,5 @@
-
+# Copyright 2016-2022 NXP
+# SPDX-License-Identifier: MIT
 g_dctENG = {
     "数据集化简分割工具" : "subdataset tool",
     "子块数据集配置" : "sub patch config",

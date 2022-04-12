@@ -1,3 +1,5 @@
+# Copyright 2016-2022 NXP
+# SPDX-License-Identifier: MIT
 '''
 监视ui文件，如果更新了，就自动调用pyuic5重新编译
 待监测的ui文件位于 lstUIs 中

@@ -1,3 +1,5 @@
+# Copyright 2016-2022 NXP
+# SPDX-License-Identifier: MIT
 # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'widertools.ui'
