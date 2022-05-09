@@ -2,6 +2,6 @@ Package name: finedataset
 Version: 0.10.0
 Outgoing License: MIT
 License File: "./LICENSE" file
-Description and/or comments: The finedataset tool is used to generate new datasets from existing object detection datasets based on constraints that can be much easier to train lightweight models from stratch, so that the newly generated datasets meet specific aspect ratios and sizes of images; the size, shape and number of external rectangular boxes; and can only contain the required categories, etc.
+Description and/or comments: The finedataset tool is used to generate new datasets from existing object detection datasets based on constraints that can be much easier to train lightweight models from scratch, so that the newly generated datasets meet specific aspect ratios and sizes of images; the size, shape and number of external rectangular boxes; and can only contain the required categories, etc.
 Release location: https://github.com/nxpmicro/finedataset
-Origin: Rocky Song (rocky.song@nxp.com)
+Origin: NXP
